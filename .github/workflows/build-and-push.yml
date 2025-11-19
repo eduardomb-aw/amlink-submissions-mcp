@@ -28,12 +28,12 @@ on:
 
 env:
   REGISTRY: ${{ github.event.inputs.registry || 'ghcr.io' }}
-  IMAGE_TAG: ${{ github.event.inputs.tag || 'latest' }}
+  IMAGE_TAG: ${{ github.event.inputs.tag || github.ref_name || 'latest' }}
 
 jobs:
   check-ci-status:
     runs-on: ubuntu-latest
-    if: github.event.inputs.skip_ci_check != 'true'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.skip_ci_check != 'true'
     outputs:
       ci-passed: ${{ steps.check.outputs.result }}
     
@@ -44,26 +44,21 @@ jobs:
       with:
         script: |
           // For manual triggers, check if CI passed on the current commit
-          if (context.eventName === 'workflow_dispatch') {
-            const { data: runs } = await github.rest.actions.listWorkflowRunsForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'ci-cd.yml',
-              head_sha: context.sha,
-              status: 'completed'
-            });
-            
-            const ciRun = runs.workflow_runs[0];
-            if (!ciRun || ciRun.conclusion !== 'success') {
-              core.setFailed(`CI pipeline has not passed for commit ${context.sha}. Please ensure CI is green before publishing images.`);
-              return 'failed';
-            }
-            
-            core.info(`✅ CI pipeline passed for commit ${context.sha}`);
-            return 'success';
+          const { data: runs } = await github.rest.actions.listWorkflowRunsForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: 'ci-cd.yml',
+            head_sha: context.sha,
+            status: 'completed'
+          });
+          
+          const ciRun = runs.workflow_runs[0];
+          if (!ciRun || ciRun.conclusion !== 'success') {
+            core.setFailed(`CI pipeline has not passed for commit ${context.sha}. Please ensure CI is green before publishing images.`);
+            return 'failed';
           }
           
-          // For tag/release triggers, assume CI passed (they should only trigger after merge)
+          core.info(`✅ CI pipeline passed for commit ${context.sha}`);
           return 'success';
 
   build-and-push:
@@ -117,7 +112,7 @@ jobs:
     - name: Build and push client image
       uses: docker/build-push-action@v5
       with:
-        context: .
+        context: ./src/amlink-submissions-mcp-client
         file: ./src/amlink-submissions-mcp-client/Dockerfile
         push: true
         tags: ${{ steps.meta-client.outputs.tags }}
@@ -129,7 +124,7 @@ jobs:
     - name: Build and push server image
       uses: docker/build-push-action@v5
       with:
-        context: .
+        context: ./src/amlink-submissions-mcp-server
         file: ./src/amlink-submissions-mcp-server/Dockerfile
         push: true
         tags: ${{ steps.meta-server.outputs.tags }}
