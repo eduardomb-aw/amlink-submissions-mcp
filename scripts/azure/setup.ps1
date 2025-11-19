@@ -33,6 +33,18 @@ function Test-AzureLogin {
     }
 }
 
+function Test-AzureCLILogin {
+    try {
+        $result = az account show 2>$null
+        if ($result) {
+            return $true
+        }
+        return $false
+    } catch {
+        return $false
+    }
+}
+
 Write-ColorText "🚀 Azure Container Apps Setup for AmLink MCP" "Blue"
 Write-ColorText "================================================" "Blue"
 Write-ColorText ""
@@ -64,8 +76,22 @@ try {
 
 # Check Azure login
 if (-not (Test-AzureLogin)) {
-    Write-ColorText "🔐 Please login to Azure..." "Yellow"
-    Connect-AzAccount
+    if (Test-AzureCLILogin) {
+        Write-ColorText "🔄 Importing Azure CLI credentials..." "Blue"
+        try {
+            Connect-AzAccount -UseAzureCLI
+            Write-ColorText "✅ Successfully imported Azure CLI credentials" "Green"
+        } catch {
+            Write-ColorText "⚠️  Could not import Azure CLI credentials, using device authentication..." "Yellow"
+            Write-ColorText "🔐 Please login to Azure..." "Yellow"
+            Write-ColorText "A browser window will open, or you'll get a device code to enter at https://microsoft.com/devicelogin" "Blue"
+            Connect-AzAccount -UseDeviceAuthentication
+        }
+    } else {
+        Write-ColorText "🔐 Please login to Azure..." "Yellow"
+        Write-ColorText "A browser window will open, or you'll get a device code to enter at https://microsoft.com/devicelogin" "Blue"
+        Connect-AzAccount -UseDeviceAuthentication
+    }
 }
 
 # Set subscription context
