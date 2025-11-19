@@ -1,0 +1,233 @@
+name: Deploy to Azure Container Apps
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - 'staging'
+          - 'production'
+      image_tag:
+        description: 'Container image tag to deploy'
+        required: true
+        default: 'latest'
+        type: string
+      skip_validation:
+        description: 'Skip deployment validation'
+        required: false
+        default: false
+        type: boolean
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: read
+  id-token: write
+
+env:
+  AZURE_RESOURCE_GROUP: rg-amlink-submissions-mcp-${{ github.event.inputs.environment || 'staging' }}
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
+  IMAGE_TAG: ${{ github.event.inputs.image_tag || github.event.release.tag_name || 'latest' }}
+
+jobs:
+  validate-prerequisites:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.setup.outputs.environment }}
+      image_tag: ${{ steps.setup.outputs.image_tag }}
+      resource_group: ${{ steps.setup.outputs.resource_group }}
+      should_deploy: ${{ steps.validate.outputs.should_deploy }}
+    
+    steps:
+    - name: Setup deployment parameters
+      id: setup
+      run: |
+        echo "environment=${{ env.ENVIRONMENT }}" >> $GITHUB_OUTPUT
+        echo "image_tag=${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+        echo "resource_group=${{ env.AZURE_RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
+        
+        echo "🎯 Deployment Configuration:"
+        echo "Environment: ${{ env.ENVIRONMENT }}"
+        echo "Image Tag: ${{ env.IMAGE_TAG }}"
+        echo "Resource Group: ${{ env.AZURE_RESOURCE_GROUP }}"
+
+    - name: Validate container images
+      id: validate
+      if: github.event.inputs.skip_validation != 'true'
+      run: |
+        CLIENT_IMAGE="ghcr.io/eduardomb-aw/amlink-submissions-mcp-client:${{ env.IMAGE_TAG }}"
+        SERVER_IMAGE="ghcr.io/eduardomb-aw/amlink-submissions-mcp-server:${{ env.IMAGE_TAG }}"
+        
+        echo "🔍 Validating container images..."
+        echo "Client: $CLIENT_IMAGE"
+        echo "Server: $SERVER_IMAGE"
+        
+        # Check if images exist
+        if docker manifest inspect "$CLIENT_IMAGE" >/dev/null 2>&1 && docker manifest inspect "$SERVER_IMAGE" >/dev/null 2>&1; then
+          echo "✅ Container images are available"
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ One or more container images not found"
+          echo "Please ensure images are published before deploying"
+          echo "should_deploy=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+    - name: Skip validation summary
+      if: github.event.inputs.skip_validation == 'true'
+      run: |
+        echo "⚠️ Deployment validation skipped"
+        echo "should_deploy=true" >> $GITHUB_OUTPUT
+
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    needs: [validate-prerequisites]
+    if: needs.validate-prerequisites.outputs.should_deploy == 'true'
+    outputs:
+      server_url: ${{ steps.deploy.outputs.serverUrl }}
+      client_url: ${{ steps.deploy.outputs.clientUrl }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Create Resource Group
+      run: |
+        az group create \
+          --name ${{ needs.validate-prerequisites.outputs.resource_group }} \
+          --location "East US 2" \
+          --tags environment=${{ needs.validate-prerequisites.outputs.environment }} \
+                 project=amlink-mcp \
+                 managed-by=github-actions
+
+    - name: Deploy Azure Container Apps
+      id: deploy
+      uses: azure/arm-deploy@v1
+      with:
+        subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        resourceGroupName: ${{ needs.validate-prerequisites.outputs.resource_group }}
+        template: ./infrastructure/main.bicep
+        parameters: >
+          ./infrastructure/${{ needs.validate-prerequisites.outputs.environment }}.parameters.json
+          imageTag=${{ needs.validate-prerequisites.outputs.image_tag }}
+          registryUsername=${{ github.actor }}
+          registryPassword=${{ secrets.GITHUB_TOKEN }}
+          clientSecret=${{ secrets.CLIENT_SECRET }}
+          submissionApiKey=${{ secrets.SUBMISSION_API_KEY }}
+          certPassword=${{ secrets.CERT_PASSWORD }}
+        failOnStdErr: false
+
+    - name: Deployment Summary
+      run: |
+        echo "## 🚀 Azure Container Apps Deployment" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment:** \`${{ needs.validate-prerequisites.outputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Image Tag:** \`${{ needs.validate-prerequisites.outputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Resource Group:** \`${{ needs.validate-prerequisites.outputs.resource_group }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🌐 Application URLs:" >> $GITHUB_STEP_SUMMARY
+        echo "- **Client (Web UI):** [${{ steps.deploy.outputs.clientUrl }}](${{ steps.deploy.outputs.clientUrl }})" >> $GITHUB_STEP_SUMMARY
+        echo "- **Server (API/MCP):** [${{ steps.deploy.outputs.serverUrl }}](${{ steps.deploy.outputs.serverUrl }})" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ⚡ Container Apps Features:" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ **Auto-scaling:** Based on HTTP requests" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ **Health checks:** Liveness and readiness probes" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ **HTTPS:** Managed certificates with custom domains" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ **Logging:** Centralized with Log Analytics" >> $GITHUB_STEP_SUMMARY
+
+  post-deployment-tests:
+    runs-on: ubuntu-latest
+    needs: [validate-prerequisites, deploy-infrastructure]
+    if: always() && needs.deploy-infrastructure.result == 'success'
+    
+    steps:
+    - name: Wait for deployment to stabilize
+      run: |
+        echo "⏳ Waiting for Container Apps to be ready..."
+        sleep 60
+
+    - name: Test application endpoints
+      run: |
+        CLIENT_URL="${{ needs.deploy-infrastructure.outputs.client_url }}"
+        SERVER_URL="${{ needs.deploy-infrastructure.outputs.server_url }}"
+        
+        echo "🧪 Testing application endpoints..."
+        
+        # Test server health
+        echo "Testing server health..."
+        if curl -f --connect-timeout 30 --max-time 60 "$SERVER_URL/health"; then
+          echo "✅ Server health check passed"
+        else
+          echo "❌ Server health check failed"
+          exit 1
+        fi
+        
+        # Test client health  
+        echo "Testing client health..."
+        if curl -f --connect-timeout 30 --max-time 60 "$CLIENT_URL/health"; then
+          echo "✅ Client health check passed"
+        else
+          echo "❌ Client health check failed"
+          exit 1
+        fi
+        
+        echo "✅ All health checks passed!"
+
+    - name: Test results summary
+      if: always()
+      run: |
+        echo "## 🧪 Post-Deployment Tests" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [[ "${{ job.status }}" == "success" ]]; then
+          echo "✅ **All tests passed!** Applications are healthy and ready." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Tests failed.** Please check the deployment logs." >> $GITHUB_STEP_SUMMARY
+        fi
+
+  deployment-summary:
+    runs-on: ubuntu-latest
+    needs: [validate-prerequisites, deploy-infrastructure, post-deployment-tests]
+    if: always()
+    
+    steps:
+    - name: Generate deployment summary
+      run: |
+        echo "## 📋 Azure Container Apps Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Prerequisites | ${{ needs.validate-prerequisites.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Infrastructure | ${{ needs.deploy-infrastructure.result == 'success' && '✅ Deployed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Health Tests | ${{ needs.post-deployment-tests.result == 'success' && '✅ Passed' || needs.post-deployment-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [[ "${{ needs.deploy-infrastructure.result }}" == "success" ]]; then
+          echo "### 🎉 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** \`${{ needs.validate-prerequisites.outputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Applications are live at:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Client: ${{ needs.deploy-infrastructure.outputs.client_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Server: ${{ needs.deploy-infrastructure.outputs.server_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Azure Resources Created:" >> $GITHUB_STEP_SUMMARY
+          echo "- Resource Group: \`${{ needs.validate-prerequisites.outputs.resource_group }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Container Apps Environment" >> $GITHUB_STEP_SUMMARY
+          echo "- Log Analytics Workspace" >> $GITHUB_STEP_SUMMARY
+          echo "- MCP Client Container App" >> $GITHUB_STEP_SUMMARY
+          echo "- MCP Server Container App" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "Please review the deployment logs and try again." >> $GITHUB_STEP_SUMMARY
+        fi
