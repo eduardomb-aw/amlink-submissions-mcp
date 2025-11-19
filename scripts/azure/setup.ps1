@@ -13,13 +13,11 @@ param(
 )
 
 # Colors for output
-$Red = [System.ConsoleColor]::Red
-$Green = [System.ConsoleColor]::Green
-$Yellow = [System.ConsoleColor]::Yellow
-$Blue = [System.ConsoleColor]::Blue
-
 function Write-ColorText {
-    param([string]$Text, [System.ConsoleColor]$Color)
+    param(
+        [string]$Text, 
+        [string]$Color = "White"
+    )
     Write-Host $Text -ForegroundColor $Color
 }
 
@@ -35,47 +33,61 @@ function Test-AzureLogin {
     }
 }
 
-Write-ColorText "🚀 Azure Container Apps Setup for AmLink MCP" $Blue
-Write-ColorText "================================================" $Blue
+Write-ColorText "🚀 Azure Container Apps Setup for AmLink MCP" "Blue"
+Write-ColorText "================================================" "Blue"
 Write-ColorText ""
 
+# Handle AzureRM module conflict
+if (Get-Module -ListAvailable -Name AzureRM) {
+    Write-ColorText "⚠️  Removing AzureRM module to prevent conflicts..." "Yellow"
+    try {
+        Uninstall-AzureRm -Force
+        Write-ColorText "✅ AzureRM module removed successfully" "Green"
+    } catch {
+        Write-ColorText "❌ Could not remove AzureRM automatically" "Red"
+        Write-ColorText "Please run: Uninstall-AzureRm" "Yellow"
+        Write-ColorText "Then re-run this script" "Yellow"
+        exit 1
+    }
+}
+
 # Check if Azure PowerShell is installed
-Write-ColorText "📋 Checking prerequisites..." $Blue
+Write-ColorText "📋 Checking prerequisites..." "Blue"
 try {
     Import-Module Az -ErrorAction Stop
-    Write-ColorText "✅ Azure PowerShell module is installed" $Green
+    Write-ColorText "✅ Azure PowerShell module is installed" "Green"
 } catch {
-    Write-ColorText "❌ Azure PowerShell module not found" $Red
-    Write-ColorText "Please install: Install-Module -Name Az -AllowClobber -Scope CurrentUser" $Yellow
+    Write-ColorText "❌ Azure PowerShell module not found" "Red"
+    Write-ColorText "Please install: Install-Module -Name Az -AllowClobber -Scope CurrentUser" "Yellow"
     exit 1
 }
 
 # Check Azure login
 if (-not (Test-AzureLogin)) {
-    Write-ColorText "🔐 Please login to Azure..." $Yellow
+    Write-ColorText "🔐 Please login to Azure..." "Yellow"
     Connect-AzAccount
 }
 
 # Set subscription context
-Write-ColorText "🎯 Setting subscription context..." $Blue
+Write-ColorText "🎯 Setting subscription context..." "Blue"
 try {
     Set-AzContext -SubscriptionId $SubscriptionId
     $subscription = Get-AzSubscription -SubscriptionId $SubscriptionId
-    Write-ColorText "✅ Using subscription: $($subscription.Name)" $Green
+    Write-ColorText "✅ Using subscription: $($subscription.Name)" "Green"
 } catch {
-    Write-ColorText "❌ Failed to set subscription context" $Red
-    Write-ColorText "Please verify subscription ID: $SubscriptionId" $Yellow
+    Write-ColorText "❌ Failed to set subscription context" "Red"
+    Write-ColorText "Please verify subscription ID: $SubscriptionId" "Yellow"
     exit 1
 }
 
 # Create service principal
-Write-ColorText "👤 Creating service principal for GitHub Actions..." $Blue
+Write-ColorText "👤 Creating service principal for GitHub Actions..." "Blue"
 try {
     # Check if service principal already exists
     $existingSp = Get-AzADServicePrincipal -DisplayName $ServicePrincipalName -ErrorAction SilentlyContinue
     
     if ($existingSp) {
-        Write-ColorText "⚠️  Service principal already exists: $ServicePrincipalName" $Yellow
+        Write-ColorText "⚠️  Service principal already exists: $ServicePrincipalName" "Yellow"
         $servicePrincipal = $existingSp
         
         # Create new credential
@@ -87,10 +99,10 @@ try {
         $clientSecret = $servicePrincipal.PasswordCredentials.SecretText
     }
     
-    Write-ColorText "✅ Service principal created/updated successfully" $Green
-    Write-ColorText "   Client ID: $($servicePrincipal.AppId)" $Green
+    Write-ColorText "✅ Service principal created/updated successfully" "Green"
+    Write-ColorText "   Client ID: $($servicePrincipal.AppId)" "Green"
 } catch {
-    Write-ColorText "❌ Failed to create service principal" $Red
+    Write-ColorText "❌ Failed to create service principal" "Red"
     Write-ColorText "Error: $($_.Exception.Message)" $Yellow
     exit 1
 }
@@ -100,7 +112,7 @@ $tenant = Get-AzTenant
 $tenantId = $tenant.Id
 
 Write-ColorText ""
-Write-ColorText "🔑 GitHub Repository Secrets Configuration" $Blue
+Write-ColorText "🔑 GitHub Repository Secrets Configuration" "Blue"
 Write-ColorText "============================================" $Blue
 Write-ColorText ""
 Write-ColorText "Add these secrets to your GitHub repository:" $Yellow
@@ -108,9 +120,9 @@ Write-ColorText "(Settings → Secrets and variables → Actions → New reposit
 Write-ColorText ""
 
 Write-ColorText "Azure Authentication Secrets:" $Blue
-Write-ColorText "AZURE_CLIENT_ID=$($servicePrincipal.AppId)" $Green
-Write-ColorText "AZURE_TENANT_ID=$tenantId" $Green
-Write-ColorText "AZURE_SUBSCRIPTION_ID=$SubscriptionId" $Green
+Write-ColorText "AZURE_CLIENT_ID=$($servicePrincipal.AppId)" "Green"
+Write-ColorText "AZURE_TENANT_ID=$tenantId" "Green"
+Write-ColorText "AZURE_SUBSCRIPTION_ID=$SubscriptionId" "Green"
 Write-ColorText ""
 
 Write-ColorText "Application Configuration Secrets:" $Blue
@@ -126,12 +138,12 @@ try {
     $contributorRole = $roleAssignments | Where-Object { $_.RoleDefinitionName -eq "Contributor" }
     
     if ($contributorRole) {
-        Write-ColorText "✅ Service principal has Contributor role" $Green
+        Write-ColorText "✅ Service principal has Contributor role" "Green"
     } else {
         Write-ColorText "⚠️  Service principal missing Contributor role" $Yellow
         Write-ColorText "   Adding Contributor role..." $Blue
         New-AzRoleAssignment -ObjectId $servicePrincipal.Id -RoleDefinitionName "Contributor"
-        Write-ColorText "✅ Contributor role assigned" $Green
+        Write-ColorText "✅ Contributor role assigned" "Green"
     }
 } catch {
     Write-ColorText "⚠️  Could not verify permissions: $($_.Exception.Message)" $Yellow
@@ -146,24 +158,24 @@ foreach ($env in $environments) {
     try {
         $rg = Get-AzResourceGroup -Name $rgName -ErrorAction SilentlyContinue
         if ($rg) {
-            Write-ColorText "✅ Resource group already exists: $rgName" $Green
+            Write-ColorText "✅ Resource group already exists: $rgName" "Green"
         } else {
             New-AzResourceGroup -Name $rgName -Location $ResourceLocation -Tag @{
                 environment = $env
                 project = "amlink-submissions-mcp"
                 managedBy = "github-actions"
             }
-            Write-ColorText "✅ Created resource group: $rgName" $Green
+            Write-ColorText "✅ Created resource group: $rgName" "Green"
         }
     } catch {
-        Write-ColorText "❌ Failed to create resource group: $rgName" $Red
+        Write-ColorText "❌ Failed to create resource group: $rgName" "Red"
         Write-ColorText "Error: $($_.Exception.Message)" $Yellow
     }
 }
 
 Write-ColorText ""
-Write-ColorText "🎉 Setup Complete!" $Green
-Write-ColorText "==================" $Green
+Write-ColorText "🎉 Setup Complete!" "Green"
+Write-ColorText "==================" "Green"
 Write-ColorText ""
 Write-ColorText "Next steps:" $Blue
 Write-ColorText "1. Add the GitHub secrets shown above to your repository" $Yellow
