@@ -49,6 +49,42 @@ A Model Context Protocol (MCP) server and client implementation for AmLink submi
    - **Client (HTTPS)**: https://localhost:5001
    - **Client (HTTP)**: http://localhost:5000
    - **Server (HTTPS)**: https://localhost:8443
+
+## 🔄 CI/CD & Deployment
+
+### Workflow Separation
+
+This project uses a **two-stage workflow** approach for optimal efficiency:
+
+1. **🔍 CI Pipeline** (`ci-cd.yml`):
+   - Validates code quality (build, test, security scan)
+   - Runs on every push/PR for fast feedback
+   - Does **not** publish artifacts (keeps CI fast)
+
+2. **🐳 Build & Push** (`build-and-push.yml`):
+   - Requires CI to pass first
+   - Publishes container images to registry
+   - Scans published images for vulnerabilities
+   - Triggered manually or on releases
+
+### Production Deployment
+
+**Option 1: From Registry (Recommended)**
+```bash
+# 1. Publish images via GitHub Actions
+# Go to Actions → "Build and Push Container Images" → Run workflow
+
+# 2. Deploy using published images
+.\scripts\deploy.ps1 deploy -Tag "latest"
+```
+
+**Option 2: Local Build**
+```bash
+# Build and deploy locally
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+📖 **Full deployment guide**: See [`docs/registry-deployment.md`](docs/registry-deployment.md)
    - **Server (HTTP)**: http://localhost:8080
 
 ## 📁 Project Structure
