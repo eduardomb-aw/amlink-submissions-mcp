@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to create release for'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -22,7 +28,13 @@ jobs:
     - name: Extract tag information
       id: tag-info
       run: |
-        TAG=${GITHUB_REF#refs/tags/}
+        # Get tag from workflow input or from tag push
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          TAG="${{ github.event.inputs.tag }}"
+        else
+          TAG=${GITHUB_REF#refs/tags/}
+        fi
+        
         echo "tag=$TAG" >> $GITHUB_OUTPUT
         echo "name=Release $TAG" >> $GITHUB_OUTPUT
         
@@ -32,6 +44,39 @@ jobs:
         else
           echo "prerelease=false" >> $GITHUB_OUTPUT
         fi
+        
+        echo "Extracted tag: $TAG"
+
+    - name: Wait for container images
+      id: wait-images
+      run: |
+        TAG="${{ steps.tag-info.outputs.tag }}"
+        CLIENT_IMAGE="ghcr.io/eduardomb-aw/amlink-submissions-mcp-client:$TAG"
+        SERVER_IMAGE="ghcr.io/eduardomb-aw/amlink-submissions-mcp-server:$TAG"
+        
+        echo "Waiting for container images to be available..."
+        echo "Client: $CLIENT_IMAGE"
+        echo "Server: $SERVER_IMAGE"
+        
+        # Wait up to 10 minutes for images to be available
+        for i in {1..60}; do
+          echo "Attempt $i/60..."
+          
+          if docker manifest inspect "$CLIENT_IMAGE" >/dev/null 2>&1 && \
+             docker manifest inspect "$SERVER_IMAGE" >/dev/null 2>&1; then
+            echo "✅ Both container images are available!"
+            echo "images_ready=true" >> $GITHUB_OUTPUT
+            break
+          fi
+          
+          if [[ $i -eq 60 ]]; then
+            echo "❌ Timeout waiting for container images"
+            echo "images_ready=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          sleep 10
+        done
 
     - name: Generate release notes
       id: notes
