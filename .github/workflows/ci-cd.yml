@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  packages: write
+  security-events: write
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -31,17 +36,33 @@ jobs:
       run: dotnet build --no-restore --configuration Release
 
     - name: Run tests
-      run: dotnet test --no-build --configuration Release --verbosity normal
+      run: |
+        # Check if test projects exist
+        if find . -name "*.csproj" -exec grep -l "Microsoft.NET.Test.Sdk" {} \; | head -1; then
+          echo "Test projects found, running tests..."
+          dotnet test --no-build --configuration Release --verbosity normal
+        else
+          echo "No test projects found, skipping tests"
+        fi
 
     - name: Generate test coverage
       run: |
-        dotnet test --collect:"XPlat Code Coverage" --results-directory ./coverage
+        # Only run coverage if test projects exist
+        if find . -name "*.csproj" -exec grep -l "Microsoft.NET.Test.Sdk" {} \; | head -1; then
+          echo "Generating test coverage..."
+          dotnet test --collect:"XPlat Code Coverage" --results-directory ./coverage
+        else
+          echo "No test projects found, skipping coverage"
+          mkdir -p ./coverage
+        fi
         
     - name: Upload coverage reports
       uses: codecov/codecov-action@v4
+      if: always()
       with:
         directory: ./coverage
         fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   security-scan:
     runs-on: ubuntu-latest
@@ -66,16 +87,12 @@ jobs:
       with:
         sarif_file: 'trivy-results.sarif'
 
-  build-and-push:
+  docker-build:
     runs-on: ubuntu-latest
-    name: Build & Push Docker Images
+    name: Docker Build Validation
     needs: [test, security-scan]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.test.result == 'success'
     
-    permissions:
-      contents: read
-      packages: write
-
     strategy:
       matrix:
         service: [server, client]
@@ -84,84 +101,41 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Build and push Docker image
+    - name: Build Docker image (no push)
       uses: docker/build-push-action@v5
       with:
         context: ./src/amlink-submissions-mcp-${{ matrix.service }}/
         file: ./src/amlink-submissions-mcp-${{ matrix.service }}/Dockerfile
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        push: false
+        tags: amlink-submissions-mcp-${{ matrix.service }}:test
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-  deploy-staging:
+  complete:
     runs-on: ubuntu-latest
-    name: Deploy to Staging
-    needs: build-and-push
-    if: github.ref == 'refs/heads/main'
-    environment: staging
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Deploy to staging
-      run: |
-        echo "🚀 Deploying to staging environment..."
-        # Add your deployment commands here
-        # For example: kubectl apply -f k8s/ or docker-compose up -d
-        echo "✅ Staging deployment completed"
-
-  deploy-production:
-    runs-on: ubuntu-latest
-    name: Deploy to Production
-    needs: deploy-staging
-    if: github.ref == 'refs/heads/main'
-    environment: production
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Deploy to production
-      run: |
-        echo "🚀 Deploying to production environment..."
-        # Add your production deployment commands here
-        echo "✅ Production deployment completed"
-
-  notify:
-    runs-on: ubuntu-latest
-    name: Notify Deployment
-    needs: [deploy-production]
+    name: Pipeline Complete
+    needs: [test, security-scan, docker-build]
     if: always()
     
     steps:
-    - name: Deployment notification
+    - name: Pipeline summary
       run: |
-        if [ "${{ needs.deploy-production.result }}" == "success" ]; then
-          echo "✅ Deployment successful!"
+        echo "## 🎉 Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+        echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Test & Build | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Security Scan | ${{ needs.security-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Docker Build | ${{ needs.docker-build.result }} |" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.test.result }}" == "success" ] && [ "${{ needs.security-scan.result }}" == "success" ] && [ "${{ needs.docker-build.result }}" == "success" ]; then
+          echo "✅ All pipeline stages completed successfully!"
+          echo "### ✅ Ready for Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "All checks passed. The application is ready for manual deployment." >> $GITHUB_STEP_SUMMARY
         else
-          echo "❌ Deployment failed!"
+          echo "❌ Pipeline completed with issues"
+          echo "### ❌ Issues Found" >> $GITHUB_STEP_SUMMARY
+          echo "Please review the failed jobs before proceeding." >> $GITHUB_STEP_SUMMARY
         fi

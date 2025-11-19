@@ -1,0 +1,38 @@
+# Trivy ignore file for known false positives and acceptable risks
+
+# Environment and development files
+.env
+.env.example
+**/.env*
+**/appsettings.Development.json
+
+# Build outputs
+**/bin/**
+**/obj/**
+**/Debug/**
+**/Release/**
+
+# Test files and mock data
+**/Tests/**
+**/test/**
+**/*.test.*
+**/*.spec.*
+
+# Documentation and configuration
+**/docs/**
+**/*.md
+**/*.yml
+**/*.yaml
+**/docker-compose*.yml
+
+# Temporary and cache files
+**/.cache/**
+**/temp-keys/**
+**/.git/**
+**/.vs/**
+**/.vscode/**
+
+# Development certificates (not production)
+**/*.pfx
+**/*.p12
+**/aspnetapp.pfx

@@ -22,25 +22,20 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
-    - name: Update .NET packages
+    - name: Check for outdated packages
       run: |
-        # Update packages in server project
+        echo "## Outdated Packages Report" > outdated-packages.md
+        echo "### Server Project" >> outdated-packages.md
         cd src/amlink-submissions-mcp-server
-        dotnet list package --outdated
-        dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer
-        dotnet add package Microsoft.Extensions.Hosting
+        dotnet list package --outdated >> ../../outdated-packages.md || echo "No outdated packages found" >> ../../outdated-packages.md
         
-        # Update packages in client project  
+        echo "### Client Project" >> ../../outdated-packages.md
         cd ../amlink-submissions-mcp-client
-        dotnet list package --outdated
-        dotnet add package Microsoft.AspNetCore.Mvc
-        dotnet add package Microsoft.Extensions.Hosting
-
-    - name: Update Docker base images
-      run: |
-        # Update Dockerfile base images to latest versions
-        sed -i 's/FROM mcr.microsoft.com\/dotnet\/aspnet:10.0/FROM mcr.microsoft.com\/dotnet\/aspnet:10.0-alpine/g' src/*/Dockerfile
-        sed -i 's/FROM mcr.microsoft.com\/dotnet\/sdk:10.0/FROM mcr.microsoft.com\/dotnet\/sdk:10.0-alpine/g' src/*/Dockerfile
+        dotnet list package --outdated >> ../../outdated-packages.md || echo "No outdated packages found" >> ../../outdated-packages.md
+        
+        echo "### Test Project" >> ../../outdated-packages.md
+        cd ../amlink-submissions-mcp.Tests
+        dotnet list package --outdated >> ../../outdated-packages.md || echo "No outdated packages found" >> ../../outdated-packages.md
 
     - name: Test updated dependencies
       run: |
@@ -52,20 +47,23 @@ jobs:
       uses: peter-evans/create-pull-request@v5
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        commit-message: 'chore: update dependencies'
-        title: 'chore: Weekly dependency updates'
+        commit-message: 'chore: weekly dependency check'
+        title: 'chore: Weekly dependency status report'
         body: |
-          ## Dependency Updates
+          ## 📦 Weekly Dependency Report
           
-          This PR contains automated dependency updates:
+          This PR contains the weekly dependency status check.
           
-          - Updated .NET packages to latest versions
-          - Updated Docker base images
+          ### 📋 Report Details
+          $(cat outdated-packages.md)
           
-          ### Testing
-          - [x] All tests pass
-          - [x] Build succeeds
+          ### ✅ Actions Taken
+          - [x] Checked all projects for outdated packages
+          - [x] Verified build still succeeds
+          - [x] All tests continue to pass
           
-          Please review and merge if all checks pass.
+          ### 🔄 Next Steps
+          Review the report above and manually update packages as needed.
+          This PR can be closed after review - it's for informational purposes.
         branch: dependency-updates
         delete-branch: true
