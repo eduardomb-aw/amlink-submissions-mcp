@@ -41,10 +41,30 @@ param submissionApiKey string = ''
 @secure()
 param certPassword string = ''
 
+@description('Existing VNet resource group name')
+param vnetResourceGroup string = 'NewAFormentiRG'
+
+@description('Existing VNet name')
+param vnetName string = 'ArchPlayGroundAFRG-1'
+
+@description('Existing subnet name for Container Apps')
+param subnetName string = '5'
+
 // Variables
 var resourceNamePrefix = '${appName}-${environmentName}'
 var clientAppName = '${resourceNamePrefix}-client'
 var serverAppName = '${resourceNamePrefix}-server'
+
+// Reference existing VNet and subnet
+resource existingVnet 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
+  name: vnetName
+  scope: resourceGroup(vnetResourceGroup)
+}
+
+resource existingSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing = {
+  name: subnetName
+  parent: existingVnet
+}
 
 // Log Analytics Workspace
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
@@ -58,7 +78,7 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   }
 }
 
-// Container Apps Environment
+// Container Apps Environment with VNet Integration
 resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2023-05-01' = {
   name: 'cae-${resourceNamePrefix}-env'
   location: location
@@ -69,6 +89,10 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2023-05-01'
         customerId: logAnalytics.properties.customerId
         sharedKey: logAnalytics.listKeys().primarySharedKey
       }
+    }
+    vnetConfiguration: {
+      infrastructureSubnetId: existingSubnet.id
+      internal: false
     }
   }
 }

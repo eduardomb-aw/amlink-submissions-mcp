@@ -27,6 +27,11 @@ This guide walks through setting up automated deployment to Azure Container Apps
 
 ### 1. Azure Prerequisites
 
+**VNet Integration:**
+- Uses existing VNet: `ArchPlayGroundAFRG-1` in resource group `NewAFormentiRG`
+- Provides secure network access for downstream API calls
+- Subnet: `5` (10.202.58.128/25)
+
 **Create Azure Service Principal:**
 ```bash
 # Login to Azure

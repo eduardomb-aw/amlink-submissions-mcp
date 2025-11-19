@@ -25,6 +25,15 @@
     },
     "submissionApiUrl": {
       "value": "https://api.example.com/submissions"
+    },
+    "vnetResourceGroup": {
+      "value": "NewAFormentiRG"
+    },
+    "vnetName": {
+      "value": "ArchPlayGroundAFRG-1"
+    },
+    "subnetName": {
+      "value": "5"
     }
   }
 }

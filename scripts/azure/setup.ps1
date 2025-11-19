@@ -2,8 +2,8 @@
 # This script helps configure Azure resources and GitHub secrets for deployment
 
 param(
-    [Parameter(Mandatory=$true)]
-    [string]$SubscriptionId,
+    [Parameter(Mandatory=$false)]
+    [string]$SubscriptionId = "1f47ba90-a3ed-4e70-a902-570616cb62b0",
     
     [Parameter(Mandatory=$false)]
     [string]$ResourceLocation = "East US 2",
