@@ -1,0 +1,60 @@
+# Debug Docker Compose Configuration
+# Usage: docker-compose -f docker-compose.debug.yml up -d
+# Includes vsdbg debugger for VS Code remote debugging
+
+services:
+  amlink-mcp-server:
+    build:
+      context: ./src/amlink-submissions-mcp-server
+      dockerfile: Dockerfile.debug
+    container_name: amlink-mcp-server
+    ports:
+      - "7072:7072"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:7072
+      - Server__Url=http://amlink-mcp-server:7072
+    volumes:
+      - ./src/amlink-submissions-mcp-server:/src/amlink-submissions-mcp-server:cached
+      - ~/.nuget/packages:/root/.nuget/packages:ro
+    networks:
+      - amlink-network
+
+  amlink-mcp-client:
+    build:
+      context: ./src/amlink-submissions-mcp-client
+      dockerfile: Dockerfile.debug
+    container_name: amlink-mcp-client
+    ports:
+      - "5000:80"
+      - "5002:5001"  # Debug port (changed to avoid conflict)
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - McpServer__Url=http://amlink-mcp-server:7072
+      - McpServer__BrowserUrl=http://localhost:7072
+      - IdentityServer__RedirectUri=http://localhost:5000/oauth/callback
+      - IdentityServer__ClientSecret=${IDENTITY_SERVER_CLIENT_SECRET:-MZ48Q~PB-wMwf18MWtO3eRZzI6Ed44d9krvNuawO}
+      - IdentityServer__GrantType=authorization_code
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-dummy-key-for-docker}
+    volumes:
+      - ./src/amlink-submissions-mcp-client:/src/app:cached
+      - ~/.nuget/packages:/root/.nuget/packages:ro
+      - dataprotection-keys:/root/.aspnet/DataProtection-Keys
+    depends_on:
+      - amlink-mcp-server
+    networks:
+      - amlink-network
+
+networks:
+  amlink-network:
+    name: amlink-submissions-mcp-network
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1500
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+volumes:
+  dataprotection-keys:

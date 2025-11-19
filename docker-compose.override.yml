@@ -1,0 +1,58 @@
+# Development/Debug Override Configuration
+# This file is automatically loaded by docker-compose for development
+# Usage: docker-compose up -d (loads both docker-compose.yml + this override)
+version: '3.8'
+
+services:
+  amlink-mcp-server:
+    build:
+      dockerfile: Dockerfile.debug
+    ports:
+      - "7072:80"    # Override production port mapping
+      - "7073:443"   # Debug HTTPS port
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80;https://+:443
+      - Server__Url=http://amlink-mcp-server:80
+      - McpServer__BrowserUrl=http://localhost:7072
+      # Use default values for development
+      - IdentityServer__ClientSecret=${IDENTITY_SERVER_CLIENT_SECRET:-MZ48Q~PB-wMwf18MWtO3eRZzI6Ed44d9krvNuawO}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-dummy-key-for-docker}
+    volumes:
+      # Mount source code for hot reload
+      - ./src/amlink-submissions-mcp-server:/src/amlink-submissions-mcp-server:cached
+      - ~/.nuget/packages:/root/.nuget/packages:ro
+      - ~/.aspnet/https:/https:ro
+    restart: "no"  # Don't auto-restart in development
+
+  amlink-mcp-client:
+    build:
+      dockerfile: Dockerfile.debug
+    ports:
+      - "5000:80"    # Keep same client port
+      - "5002:443"   # Debug HTTPS port (avoid conflict with 5001)
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80;https://+:443
+      - McpServer__Url=http://amlink-mcp-server:80
+      - McpServer__BrowserUrl=http://localhost:7072  # Point to dev server port
+      - IdentityServer__RedirectUri=http://localhost:5000/oauth/callback
+      # Use default values for development
+      - IdentityServer__ClientSecret=${IDENTITY_SERVER_CLIENT_SECRET:-MZ48Q~PB-wMwf18MWtO3eRZzI6Ed44d9krvNuawO}
+      - IdentityServer__GrantType=authorization_code
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-dummy-key-for-docker}
+    volumes:
+      # Mount source code for hot reload
+      - ./src/amlink-submissions-mcp-client:/src/amlink-submissions-mcp-client:cached
+      - ~/.nuget/packages:/root/.nuget/packages:ro
+      - ~/.aspnet/https:/https:ro
+    restart: "no"  # Don't auto-restart in development
+
+networks:
+  amlink-network:
+    # Enhanced network configuration for development
+    driver_opts:
+      com.docker.network.driver.mtu: 1500
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16

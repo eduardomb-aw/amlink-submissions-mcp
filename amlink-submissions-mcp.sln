@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "amlink-submissions-mcp-client", "src\amlink-submissions-mcp-client\amlink-submissions-mcp-client.csproj", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "amlink-submissions-mcp-server", "src\amlink-submissions-mcp-server\amlink-submissions-mcp-server.csproj", "{7C5C79DF-3A79-17E2-8A51-208E9BFEFE9C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{827E0CD3-B72D-47B6-A68D-7590B98EB39B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{827E0CD3-B72D-47B6-A68D-7590B98EB39B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{827E0CD3-B72D-47B6-A68D-7590B98EB39B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{827E0CD3-B72D-47B6-A68D-7590B98EB39B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C5C79DF-3A79-17E2-8A51-208E9BFEFE9C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C5C79DF-3A79-17E2-8A51-208E9BFEFE9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C5C79DF-3A79-17E2-8A51-208E9BFEFE9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C5C79DF-3A79-17E2-8A51-208E9BFEFE9C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {651ECD81-E384-488E-BFDB-4691501C211E}
+	EndGlobalSection
+EndGlobal

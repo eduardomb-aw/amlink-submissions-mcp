@@ -1,0 +1,62 @@
+# Production Docker Compose Configuration
+# Usage: docker-compose up -d
+version: '3.8'
+
+services:
+  amlink-mcp-server:
+    build:
+      context: ./src/amlink-submissions-mcp-server
+      dockerfile: Dockerfile
+    container_name: amlink-mcp-server
+    ports:
+      - "8080:80"
+      - "8443:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80;https://+:443
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=YourSecurePassword123!
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - Server__Url=http://amlink-mcp-server:80
+      - IdentityServer__ClientSecret=${IDENTITY_SERVER_CLIENT_SECRET:?IDENTITY_SERVER_CLIENT_SECRET is required}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:?OPENAI_API_KEY is required}
+    volumes:
+      - dataprotection-keys:/root/.aspnet/DataProtection-Keys
+      - ~/.aspnet/https:/https:ro
+    restart: unless-stopped
+    networks:
+      - amlink-network
+
+  amlink-mcp-client:
+    build:
+      context: ./src/amlink-submissions-mcp-client
+      dockerfile: Dockerfile
+    container_name: amlink-mcp-client
+    ports:
+      - "5000:80"
+      - "5001:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80;https://+:443
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=YourSecurePassword123!
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - McpServer__Url=http://amlink-mcp-server:80
+      - McpServer__BrowserUrl=https://localhost:8443
+      - IdentityServer__RedirectUri=https://localhost:5001/oauth/callback
+      - IdentityServer__ClientSecret=${IDENTITY_SERVER_CLIENT_SECRET:?IDENTITY_SERVER_CLIENT_SECRET is required}
+      - IdentityServer__GrantType=authorization_code
+      - OPENAI_API_KEY=${OPENAI_API_KEY:?OPENAI_API_KEY is required}
+    volumes:
+      - dataprotection-keys:/root/.aspnet/DataProtection-Keys
+      - ~/.aspnet/https:/https:ro
+    depends_on:
+      - amlink-mcp-server
+    restart: unless-stopped
+    networks:
+      - amlink-network
+
+networks:
+  amlink-network:
+    driver: bridge
+
+volumes:
+  dataprotection-keys:
