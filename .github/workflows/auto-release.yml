@@ -1,0 +1,129 @@
+name: Auto Release from Tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Extract tag information
+      id: tag-info
+      run: |
+        TAG=${GITHUB_REF#refs/tags/}
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "name=Release $TAG" >> $GITHUB_OUTPUT
+        
+        # Determine if this is a prerelease
+        if [[ "$TAG" =~ -[a-zA-Z] ]]; then
+          echo "prerelease=true" >> $GITHUB_OUTPUT
+        else
+          echo "prerelease=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Generate release notes
+      id: notes
+      run: |
+        TAG="${{ steps.tag-info.outputs.tag }}"
+        
+        # Get the previous tag
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        
+        echo "# 🚀 Release $TAG" > release_notes.md
+        echo "" >> release_notes.md
+        
+        if [[ -n "$PREVIOUS_TAG" ]]; then
+          echo "## 📋 Changes since $PREVIOUS_TAG" >> release_notes.md
+          echo "" >> release_notes.md
+          
+          # Get commits since last tag with better formatting
+          git log --pretty=format:"- %s (%h)" "$PREVIOUS_TAG..HEAD" | while read line; do
+            # Categorize commits
+            if [[ "$line" =~ ^-\ feat ]]; then
+              echo "### ✨ Features" >> release_notes.md
+              echo "$line" | sed 's/^- feat[:(]/- /' >> release_notes.md
+            elif [[ "$line" =~ ^-\ fix ]]; then
+              echo "### 🐛 Bug Fixes" >> release_notes.md
+              echo "$line" | sed 's/^- fix[:(]/- /' >> release_notes.md
+            elif [[ "$line" =~ ^-\ ci ]]; then
+              echo "### 🔧 CI/CD" >> release_notes.md
+              echo "$line" | sed 's/^- ci[:(]/- /' >> release_notes.md
+            else
+              echo "### 🔄 Other Changes" >> release_notes.md
+              echo "$line" >> release_notes.md
+            fi
+          done
+          
+          echo "" >> release_notes.md
+          echo "## 👥 Contributors" >> release_notes.md
+          git log --pretty=format:"- @%an" "$PREVIOUS_TAG..HEAD" | sort -u >> release_notes.md
+        else
+          echo "## 🎉 Initial Release" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "This is the first release of AmLink Submissions MCP!" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### ✨ Features" >> release_notes.md
+          echo "- 🔧 **MCP Server**: AmLink Submissions API integration with Model Context Protocol" >> release_notes.md
+          echo "- 🌐 **Web Client**: Interactive web interface for testing and demonstration" >> release_notes.md
+          echo "- 🔐 **Authentication**: Identity Server 4 with OAuth 2.0/OpenID Connect" >> release_notes.md
+          echo "- 🐳 **Containerization**: Docker support with development and production configurations" >> release_notes.md
+          echo "- ⚡ **CI/CD Pipeline**: Automated testing, security scanning, and deployment" >> release_notes.md
+          echo "- 🔒 **Security**: Vulnerability scanning with Trivy and security reporting" >> release_notes.md
+          echo "- 📦 **Registry Deployment**: Container image publishing to GitHub Container Registry" >> release_notes.md
+        fi
+        
+        echo "" >> release_notes.md
+        echo "## 📦 Container Images" >> release_notes.md
+        echo "- **Client**: \`ghcr.io/eduardomb-aw/amlink-submissions-mcp-client:$TAG\`" >> release_notes.md
+        echo "- **Server**: \`ghcr.io/eduardomb-aw/amlink-submissions-mcp-server:$TAG\`" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "## 🚀 Quick Deploy" >> release_notes.md
+        echo "\`\`\`powershell" >> release_notes.md
+        echo "# Windows PowerShell" >> release_notes.md
+        echo ".\\scripts\\deploy.ps1 deploy -Tag \"$TAG\"" >> release_notes.md
+        echo "\`\`\`" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "\`\`\`bash" >> release_notes.md
+        echo "# Linux/Mac" >> release_notes.md
+        echo "./scripts/deploy.sh deploy --tag $TAG" >> release_notes.md
+        echo "\`\`\`" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "## 📚 Documentation" >> release_notes.md
+        echo "- [Deployment Guide](https://github.com/eduardomb-aw/amlink-submissions-mcp/blob/main/docs/registry-deployment.md)" >> release_notes.md
+        echo "- [Project README](https://github.com/eduardomb-aw/amlink-submissions-mcp/blob/main/README.md)" >> release_notes.md
+        
+        echo "Generated release notes:"
+        cat release_notes.md
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.tag-info.outputs.tag }}
+        name: ${{ steps.tag-info.outputs.name }}
+        body_path: release_notes.md
+        prerelease: ${{ steps.tag-info.outputs.prerelease }}
+        generate_release_notes: false
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Release created successfully
+      run: |
+        echo "## 🎉 Release Created!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Tag**: \`${{ steps.tag-info.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Prerelease**: ${{ steps.tag-info.outputs.prerelease }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "The Build & Push workflow should now publish container images for this release." >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🔗 **Release URL**: https://github.com/${{ github.repository }}/releases/tag/${{ steps.tag-info.outputs.tag }}" >> $GITHUB_STEP_SUMMARY

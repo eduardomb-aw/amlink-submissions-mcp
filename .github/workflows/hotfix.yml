@@ -1,0 +1,184 @@
+name: Hotfix Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      hotfix_version:
+        description: 'Hotfix version (e.g., v1.0.1)'
+        required: true
+        type: string
+      hotfix_description:
+        description: 'Brief description of the hotfix'
+        required: true
+        type: string
+      base_branch:
+        description: 'Base branch for hotfix'
+        required: false
+        default: 'main'
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+
+jobs:
+  validate-hotfix:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+      is_valid: ${{ steps.validate.outputs.is_valid }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.inputs.base_branch }}
+        fetch-depth: 0
+
+    - name: Validate hotfix parameters
+      id: validate
+      run: |
+        VERSION="${{ github.event.inputs.hotfix_version }}"
+        DESCRIPTION="${{ github.event.inputs.hotfix_description }}"
+        
+        echo "🔍 Validating hotfix parameters..."
+        echo "Version: $VERSION"
+        echo "Description: $DESCRIPTION"
+        echo "Base branch: ${{ github.event.inputs.base_branch }}"
+        
+        # Validate version format
+        if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "❌ Invalid hotfix version format: $VERSION"
+          echo "Expected format: v1.0.1 (semantic versioning)"
+          exit 1
+        fi
+        
+        # Check if tag already exists
+        if git rev-parse "$VERSION" >/dev/null 2>&1; then
+          echo "❌ Tag $VERSION already exists"
+          exit 1
+        fi
+        
+        # Validate description is not empty
+        if [[ -z "$DESCRIPTION" ]]; then
+          echo "❌ Hotfix description cannot be empty"
+          exit 1
+        fi
+        
+        echo "✅ Hotfix parameters are valid"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "is_valid=true" >> $GITHUB_OUTPUT
+
+  create-hotfix-branch:
+    runs-on: ubuntu-latest
+    needs: [validate-hotfix]
+    if: needs.validate-hotfix.outputs.is_valid == 'true'
+    outputs:
+      branch_name: ${{ steps.create.outputs.branch_name }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.inputs.base_branch }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create hotfix branch
+      id: create
+      run: |
+        VERSION="${{ needs.validate-hotfix.outputs.version }}"
+        BRANCH_NAME="hotfix/$VERSION"
+        
+        echo "🌿 Creating hotfix branch: $BRANCH_NAME"
+        
+        # Create and push hotfix branch
+        git checkout -b "$BRANCH_NAME"
+        git push origin "$BRANCH_NAME"
+        
+        echo "✅ Hotfix branch created: $BRANCH_NAME"
+        echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+  wait-for-changes:
+    runs-on: ubuntu-latest
+    needs: [validate-hotfix, create-hotfix-branch]
+    
+    steps:
+    - name: Instructions for hotfix
+      run: |
+        VERSION="${{ needs.validate-hotfix.outputs.version }}"
+        BRANCH="${{ needs.create-hotfix-branch.outputs.branch_name }}"
+        
+        echo "## 🚨 Hotfix Branch Created" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Version**: \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch**: \`$BRANCH\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Description**: ${{ github.event.inputs.hotfix_description }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📝 Next Steps:" >> $GITHUB_STEP_SUMMARY
+        echo "1. **Make your hotfix changes** in the \`$BRANCH\` branch" >> $GITHUB_STEP_SUMMARY
+        echo "2. **Test thoroughly** - hotfixes go directly to production" >> $GITHUB_STEP_SUMMARY
+        echo "3. **Create a Pull Request** to \`${{ github.event.inputs.base_branch }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "4. **After PR merge**, the release will be created automatically" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Quick Actions:" >> $GITHUB_STEP_SUMMARY
+        echo "- [Create Pull Request](https://github.com/${{ github.repository }}/compare/${{ github.event.inputs.base_branch }}...$BRANCH)" >> $GITHUB_STEP_SUMMARY
+        echo "- [View Branch](https://github.com/${{ github.repository }}/tree/$BRANCH)" >> $GITHUB_STEP_SUMMARY
+        
+        echo "⏳ **This workflow will complete once you create and merge the PR.**"
+
+  create-hotfix-release:
+    runs-on: ubuntu-latest
+    needs: [validate-hotfix, create-hotfix-branch]
+    if: false  # Disabled - hotfix releases should be created via PR merge
+    
+    steps:
+    - name: Checkout hotfix branch
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ needs.create-hotfix-branch.outputs.branch_name }}
+        fetch-depth: 0
+
+    - name: Create hotfix tag and release
+      run: |
+        VERSION="${{ needs.validate-hotfix.outputs.version }}"
+        DESCRIPTION="${{ github.event.inputs.hotfix_description }}"
+        
+        echo "🏷️  Creating hotfix tag: $VERSION"
+        
+        # Create annotated tag
+        git tag -a "$VERSION" -m "Hotfix $VERSION: $DESCRIPTION"
+        git push origin "$VERSION"
+        
+        echo "✅ Hotfix tag created and pushed"
+        
+        echo "## 🚨 Hotfix Released!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Version**: \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Description**: $DESCRIPTION" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "The auto-release workflow will now create the GitHub release and trigger image publishing." >> $GITHUB_STEP_SUMMARY
+        
+  summary:
+    runs-on: ubuntu-latest
+    needs: [validate-hotfix, create-hotfix-branch, wait-for-changes]
+    if: always()
+    
+    steps:
+    - name: Hotfix summary
+      run: |
+        echo "## 🚨 Hotfix Workflow Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Validation | ${{ needs.validate-hotfix.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Branch Creation | ${{ needs.create-hotfix-branch.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [[ "${{ needs.create-hotfix-branch.result }}" == "success" ]]; then
+          echo "### ✅ Hotfix branch is ready!" >> $GITHUB_STEP_SUMMARY
+          echo "Make your changes in \`${{ needs.create-hotfix-branch.outputs.branch_name }}\` and create a PR." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "### ❌ Hotfix creation failed" >> $GITHUB_STEP_SUMMARY
+          echo "Please check the logs and try again." >> $GITHUB_STEP_SUMMARY
+        fi

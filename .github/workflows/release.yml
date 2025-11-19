@@ -1,0 +1,313 @@
+name: Release Pipeline
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+      generate_notes:
+        description: 'Auto-generate release notes'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  packages: write
+  security-events: write
+  pull-requests: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  validate-release:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    outputs:
+      should_create_release: ${{ steps.check.outputs.should_create }}
+      release_version: ${{ steps.check.outputs.version }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Validate release parameters
+      id: check
+      run: |
+        VERSION="${{ github.event.inputs.version }}"
+        
+        # Validate version format
+        if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+          echo "❌ Invalid version format: $VERSION"
+          echo "Expected format: v1.0.0 or v1.0.0-beta"
+          exit 1
+        fi
+        
+        # Check if tag already exists
+        if git rev-parse "$VERSION" >/dev/null 2>&1; then
+          echo "❌ Tag $VERSION already exists"
+          exit 1
+        fi
+        
+        # Check if CI passed for current commit
+        echo "✅ Version format valid: $VERSION"
+        echo "should_create=true" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [validate-release]
+    if: always() && (needs.validate-release.result == 'success' || github.event_name == 'release')
+    outputs:
+      release_id: ${{ steps.create.outputs.id }}
+      release_tag: ${{ steps.get-info.outputs.tag }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get release information
+      id: get-info
+      run: |
+        if [[ "${{ github.event_name }}" == "release" ]]; then
+          echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          echo "name=${{ github.event.release.name }}" >> $GITHUB_OUTPUT
+          echo "id=${{ github.event.release.id }}" >> $GITHUB_OUTPUT
+        else
+          VERSION="${{ needs.validate-release.outputs.release_version }}"
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
+          echo "name=Release $VERSION" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Generate release notes
+      id: notes
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.generate_notes == 'true'
+      run: |
+        # Get the previous tag
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        CURRENT_TAG="${{ steps.get-info.outputs.tag }}"
+        
+        if [[ -n "$PREVIOUS_TAG" ]]; then
+          echo "## 🚀 What's New in $CURRENT_TAG" > release_notes.md
+          echo "" >> release_notes.md
+          
+          # Get commits since last tag
+          echo "### 📋 Changes" >> release_notes.md
+          git log --pretty=format:"- %s (%h)" "$PREVIOUS_TAG..HEAD" >> release_notes.md
+          echo "" >> release_notes.md
+          
+          # Get contributors
+          echo "" >> release_notes.md
+          echo "### 👥 Contributors" >> release_notes.md
+          git log --pretty=format:"- @%an" "$PREVIOUS_TAG..HEAD" | sort -u >> release_notes.md
+        else
+          echo "## 🎉 Initial Release $CURRENT_TAG" > release_notes.md
+          echo "" >> release_notes.md
+          echo "This is the first release of AmLink Submissions MCP!" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### ✨ Features" >> release_notes.md
+          echo "- 🔧 MCP Server with AmLink Submissions API integration" >> release_notes.md
+          echo "- 🌐 Web client for testing and demonstration" >> release_notes.md
+          echo "- 🔐 Identity Server 4 authentication" >> release_notes.md
+          echo "- 🐳 Docker containerization with production configurations" >> release_notes.md
+          echo "- ⚡ Optimized CI/CD pipeline with registry deployment" >> release_notes.md
+          echo "- 🔒 Security scanning and vulnerability management" >> release_notes.md
+        fi
+        
+        echo "Generated release notes:"
+        cat release_notes.md
+
+    - name: Create GitHub Release
+      id: create
+      if: github.event_name == 'workflow_dispatch'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.get-info.outputs.tag }}
+        release_name: ${{ steps.get-info.outputs.name }}
+        body_path: ${{ github.event.inputs.generate_notes == 'true' && 'release_notes.md' || '' }}
+        body: ${{ github.event.inputs.generate_notes == 'false' && 'Release created via automated pipeline.' || '' }}
+        draft: false
+        prerelease: ${{ github.event.inputs.prerelease }}
+
+  wait-for-images:
+    runs-on: ubuntu-latest
+    needs: [create-release]
+    timeout-minutes: 30
+    
+    steps:
+    - name: Wait for container images to be published
+      run: |
+        TAG="${{ needs.create-release.outputs.release_tag }}"
+        CLIENT_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-client:$TAG"
+        SERVER_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-server:$TAG"
+        
+        echo "🔍 Waiting for images to be published..."
+        echo "Client: $CLIENT_IMAGE"
+        echo "Server: $SERVER_IMAGE"
+        
+        # Function to check if image exists
+        check_image() {
+          docker manifest inspect "$1" >/dev/null 2>&1
+        }
+        
+        # Wait for both images
+        MAX_ATTEMPTS=60
+        ATTEMPT=0
+        
+        while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+          echo "⏳ Attempt $((ATTEMPT + 1))/$MAX_ATTEMPTS"
+          
+          if check_image "$CLIENT_IMAGE" && check_image "$SERVER_IMAGE"; then
+            echo "✅ Both images are available!"
+            echo "client_image=$CLIENT_IMAGE" >> $GITHUB_OUTPUT
+            echo "server_image=$SERVER_IMAGE" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "⌛ Images not ready yet, waiting 30 seconds..."
+          sleep 30
+          ATTEMPT=$((ATTEMPT + 1))
+        done
+        
+        echo "❌ Timeout waiting for images to be published"
+        exit 1
+
+  create-deployment-package:
+    runs-on: ubuntu-latest
+    needs: [create-release, wait-for-images]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Create deployment package
+      run: |
+        TAG="${{ needs.create-release.outputs.release_tag }}"
+        PACKAGE_NAME="amlink-submissions-mcp-$TAG-deployment"
+        
+        # Create deployment directory
+        mkdir -p "$PACKAGE_NAME"
+        
+        # Copy deployment files
+        cp docker-compose.registry.yml "$PACKAGE_NAME/"
+        cp .env.prod.example "$PACKAGE_NAME/.env.example"
+        cp scripts/deploy.ps1 "$PACKAGE_NAME/"
+        cp scripts/deploy.sh "$PACKAGE_NAME/"
+        cp -r docs "$PACKAGE_NAME/"
+        
+        # Create deployment-specific docker-compose with tagged images
+        sed "s|ghcr.io/eduardomb-aw/amlink-submissions-mcp-client:latest|ghcr.io/eduardomb-aw/amlink-submissions-mcp-client:$TAG|g" \
+            docker-compose.registry.yml > "$PACKAGE_NAME/docker-compose.yml"
+        sed -i "s|ghcr.io/eduardomb-aw/amlink-submissions-mcp-server:latest|ghcr.io/eduardomb-aw/amlink-submissions-mcp-server:$TAG|g" \
+            "$PACKAGE_NAME/docker-compose.yml"
+        
+        # Create README for deployment
+        cat > "$PACKAGE_NAME/README.md" << EOF
+        # AmLink Submissions MCP - Deployment Package $TAG
+        
+        This package contains everything needed to deploy AmLink Submissions MCP $TAG.
+        
+        ## 🚀 Quick Deploy
+        
+        ### Windows (PowerShell)
+        \`\`\`powershell
+        # 1. Configure environment
+        cp .env.example .env
+        # Edit .env with your values
+        
+        # 2. Deploy
+        .\deploy.ps1 deploy
+        \`\`\`
+        
+        ### Linux/Mac (Bash)
+        \`\`\`bash
+        # 1. Configure environment
+        cp .env.example .env
+        # Edit .env with your values
+        
+        # 2. Make script executable and deploy
+        chmod +x deploy.sh
+        ./deploy.sh deploy
+        \`\`\`
+        
+        ## 📦 Container Images
+        - **Client**: \`ghcr.io/eduardomb-aw/amlink-submissions-mcp-client:$TAG\`
+        - **Server**: \`ghcr.io/eduardomb-aw/amlink-submissions-mcp-server:$TAG\`
+        
+        ## 📚 Documentation
+        See the \`docs/\` directory for complete deployment guides.
+        
+        ## 🆘 Support
+        - GitHub Issues: https://github.com/eduardomb-aw/amlink-submissions-mcp/issues
+        - Documentation: https://github.com/eduardomb-aw/amlink-submissions-mcp/tree/main/docs
+        EOF
+        
+        # Create zip package
+        zip -r "$PACKAGE_NAME.zip" "$PACKAGE_NAME"
+        
+        echo "📦 Deployment package created: $PACKAGE_NAME.zip"
+        ls -la "$PACKAGE_NAME.zip"
+        
+        # Store package name for upload
+        echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+        echo "package_file=$PACKAGE_NAME.zip" >> $GITHUB_OUTPUT
+
+    - name: Upload deployment package to release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url || format('https://uploads.github.com/repos/{0}/releases/{1}/assets{{?name,label}}', github.repository, needs.create-release.outputs.release_id) }}
+        asset_path: ${{ steps.create-package.outputs.package_file }}
+        asset_name: ${{ steps.create-package.outputs.package_file }}
+        asset_content_type: application/zip
+
+  release-summary:
+    runs-on: ubuntu-latest
+    needs: [create-release, wait-for-images, create-deployment-package]
+    if: always()
+    
+    steps:
+    - name: Generate release summary
+      run: |
+        TAG="${{ needs.create-release.outputs.release_tag }}"
+        
+        echo "## 🎉 Release $TAG Complete!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Release Creation | ${{ needs.create-release.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Container Images | ${{ needs.wait-for-images.result == 'success' && '✅ Published' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Deployment Package | ${{ needs.create-deployment-package.result == 'success' && '✅ Created' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [[ "${{ needs.wait-for-images.result }}" == "success" ]]; then
+          echo "### 📦 Published Images" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/eduardomb-aw/amlink-submissions-mcp-client:$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/eduardomb-aw/amlink-submissions-mcp-server:$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Deploy Commands" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Download and extract deployment package" >> $GITHUB_STEP_SUMMARY
+          echo "# Configure .env file" >> $GITHUB_STEP_SUMMARY
+          echo "# Run: ./deploy.sh deploy" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🔗 **Release URL**: https://github.com/${{ github.repository }}/releases/tag/$TAG" >> $GITHUB_STEP_SUMMARY
