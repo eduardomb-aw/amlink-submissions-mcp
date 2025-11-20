@@ -1,0 +1,280 @@
+name: Deploy to Web Apps for Containers
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - 'staging'
+          - 'production'
+      image_tag:
+        description: 'Container image tag to deploy'
+        required: true
+        default: 'latest'
+        type: string
+      force_deploy:
+        description: 'Force deployment even if images are not verified'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: eduardomb-aw
+
+jobs:
+  prepare-deployment:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.config.outputs.environment }}
+      image_tag: ${{ steps.config.outputs.image_tag }}
+      resource_group: ${{ steps.config.outputs.resource_group }}
+      client_app_name: ${{ steps.config.outputs.client_app_name }}
+      server_app_name: ${{ steps.config.outputs.server_app_name }}
+      client_image: ${{ steps.config.outputs.client_image }}
+      server_image: ${{ steps.config.outputs.server_image }}
+      
+    steps:
+    - name: Configure deployment parameters
+      id: config
+      run: |
+        # Determine environment and image tag
+        if [[ "${{ github.event_name }}" == "release" ]]; then
+          ENVIRONMENT="staging"
+          IMAGE_TAG="${{ github.event.release.tag_name }}"
+        else
+          ENVIRONMENT="${{ github.event.inputs.environment }}"
+          IMAGE_TAG="${{ github.event.inputs.image_tag }}"
+        fi
+        
+        # Set environment-specific resource names
+        if [[ "$ENVIRONMENT" == "production" ]]; then
+          RESOURCE_GROUP="rg-amlink-submissions-mcp-prod"
+          CLIENT_APP_NAME="app-amlink-submissions-mcp-prod-client"
+          SERVER_APP_NAME="app-amlink-submissions-mcp-prod-server"
+        else
+          RESOURCE_GROUP="rg-amlink-submissions-mcp-staging"
+          CLIENT_APP_NAME="app-amlink-submissions-mcp-staging-client"
+          SERVER_APP_NAME="app-amlink-submissions-mcp-staging-server"
+        fi
+        
+        # Construct image names
+        CLIENT_IMAGE="${{ env.REGISTRY }}/${{ env.OWNER }}/amlink-submissions-mcp-client:$IMAGE_TAG"
+        SERVER_IMAGE="${{ env.REGISTRY }}/${{ env.OWNER }}/amlink-submissions-mcp-server:$IMAGE_TAG"
+        
+        # Output all configuration
+        echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+        echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+        echo "resource_group=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
+        echo "client_app_name=$CLIENT_APP_NAME" >> $GITHUB_OUTPUT
+        echo "server_app_name=$SERVER_APP_NAME" >> $GITHUB_OUTPUT
+        echo "client_image=$CLIENT_IMAGE" >> $GITHUB_OUTPUT
+        echo "server_image=$SERVER_IMAGE" >> $GITHUB_OUTPUT
+        
+        # Display configuration
+        echo "🎯 Deployment Configuration:"
+        echo "Environment: $ENVIRONMENT"
+        echo "Image Tag: $IMAGE_TAG"
+        echo "Resource Group: $RESOURCE_GROUP"
+        echo "Client App: $CLIENT_APP_NAME"
+        echo "Server App: $SERVER_APP_NAME"
+        echo "Client Image: $CLIENT_IMAGE"
+        echo "Server Image: $SERVER_IMAGE"
+
+    - name: Verify container images
+      if: github.event.inputs.force_deploy != 'true'
+      run: |
+        echo "🔍 Verifying container images exist..."
+        
+        # Check client image
+        if docker manifest inspect "${{ steps.config.outputs.client_image }}" >/dev/null 2>&1; then
+          echo "✅ Client image verified: ${{ steps.config.outputs.client_image }}"
+        else
+          echo "❌ Client image not found: ${{ steps.config.outputs.client_image }}"
+          exit 1
+        fi
+        
+        # Check server image
+        if docker manifest inspect "${{ steps.config.outputs.server_image }}" >/dev/null 2>&1; then
+          echo "✅ Server image verified: ${{ steps.config.outputs.server_image }}"
+        else
+          echo "❌ Server image not found: ${{ steps.config.outputs.server_image }}"
+          exit 1
+        fi
+        
+        echo "✅ All container images verified and ready for deployment"
+
+  deploy-web-apps:
+    runs-on: ubuntu-latest
+    needs: [prepare-deployment]
+    environment: ${{ needs.prepare-deployment.outputs.environment }}
+    
+    steps:
+    - name: Azure Login
+      run: |
+        # Login using Azure CLI with service principal
+        az login --service-principal \
+          --username "${{ secrets.AZURE_CLIENT_ID }}" \
+          --password "${{ secrets.AZURE_CLIENT_SECRET }}" \
+          --tenant "${{ secrets.AZURE_TENANT_ID }}"
+        
+        az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+        
+        # Verify login
+        echo "✅ Logged in to Azure:"
+        az account show --output table
+
+    - name: Update Client Web App
+      run: |
+        echo "🚀 Updating client web app container..."
+        
+        az webapp config container set \
+          --name "${{ needs.prepare-deployment.outputs.client_app_name }}" \
+          --resource-group "${{ needs.prepare-deployment.outputs.resource_group }}" \
+          --container-image-name "${{ needs.prepare-deployment.outputs.client_image }}" \
+          --container-registry-url "https://${{ env.REGISTRY }}" \
+          --container-registry-user "${{ github.actor }}" \
+          --container-registry-password "${{ secrets.GITHUB_TOKEN }}"
+        
+        echo "✅ Client web app container updated successfully"
+
+    - name: Update Server Web App
+      run: |
+        echo "🚀 Updating server web app container..."
+        
+        az webapp config container set \
+          --name "${{ needs.prepare-deployment.outputs.server_app_name }}" \
+          --resource-group "${{ needs.prepare-deployment.outputs.resource_group }}" \
+          --container-image-name "${{ needs.prepare-deployment.outputs.server_image }}" \
+          --container-registry-url "https://${{ env.REGISTRY }}" \
+          --container-registry-user "${{ github.actor }}" \
+          --container-registry-password "${{ secrets.GITHUB_TOKEN }}"
+        
+        echo "✅ Server web app container updated successfully"
+
+    - name: Restart Web Apps
+      run: |
+        echo "🔄 Restarting web apps to apply new containers..."
+        
+        # Restart both apps in parallel for faster deployment
+        az webapp restart \
+          --name "${{ needs.prepare-deployment.outputs.client_app_name }}" \
+          --resource-group "${{ needs.prepare-deployment.outputs.resource_group }}" &
+        
+        az webapp restart \
+          --name "${{ needs.prepare-deployment.outputs.server_app_name }}" \
+          --resource-group "${{ needs.prepare-deployment.outputs.resource_group }}" &
+        
+        # Wait for both restarts to complete
+        wait
+        
+        echo "✅ Both web apps restarted successfully"
+
+  verify-deployment:
+    runs-on: ubuntu-latest
+    needs: [prepare-deployment, deploy-web-apps]
+    if: always() && needs.deploy-web-apps.result == 'success'
+    
+    steps:
+    - name: Wait for applications to stabilize
+      run: |
+        echo "⏳ Waiting for applications to start up..."
+        sleep 60
+
+    - name: Health check applications
+      run: |
+        CLIENT_URL="https://${{ needs.prepare-deployment.outputs.client_app_name }}.azurewebsites.net"
+        SERVER_URL="https://${{ needs.prepare-deployment.outputs.server_app_name }}.azurewebsites.net"
+        
+        echo "🏥 Running health checks..."
+        echo "Client URL: $CLIENT_URL"
+        echo "Server URL: $SERVER_URL"
+        
+        # Test client app
+        if curl -f --connect-timeout 30 --max-time 60 "$CLIENT_URL" >/dev/null 2>&1; then
+          echo "✅ Client app is healthy and responding"
+          CLIENT_STATUS="✅ Healthy"
+        else
+          echo "⚠️ Client app is not responding (may still be starting)"
+          CLIENT_STATUS="⚠️ Not responding"
+        fi
+        
+        # Test server app
+        if curl -f --connect-timeout 30 --max-time 60 "$SERVER_URL" >/dev/null 2>&1; then
+          echo "✅ Server app is healthy and responding"
+          SERVER_STATUS="✅ Healthy"
+        else
+          echo "⚠️ Server app is not responding (may still be starting)"
+          SERVER_STATUS="⚠️ Not responding"
+        fi
+        
+        # Save status for summary
+        echo "CLIENT_STATUS=$CLIENT_STATUS" >> $GITHUB_ENV
+        echo "SERVER_STATUS=$SERVER_STATUS" >> $GITHUB_ENV
+        echo "CLIENT_URL=$CLIENT_URL" >> $GITHUB_ENV
+        echo "SERVER_URL=$SERVER_URL" >> $GITHUB_ENV
+
+    - name: Deployment verification summary
+      run: |
+        echo "## 🏥 Deployment Health Check" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Application | Status | URL |" >> $GITHUB_STEP_SUMMARY
+        echo "|-------------|--------|-----|" >> $GITHUB_STEP_SUMMARY
+        echo "| Client | $CLIENT_STATUS | [${{ env.CLIENT_URL }}](${{ env.CLIENT_URL }}) |" >> $GITHUB_STEP_SUMMARY
+        echo "| Server | $SERVER_STATUS | [${{ env.SERVER_URL }}](${{ env.SERVER_URL }}) |" >> $GITHUB_STEP_SUMMARY
+
+  deployment-summary:
+    runs-on: ubuntu-latest
+    needs: [prepare-deployment, deploy-web-apps, verify-deployment]
+    if: always()
+    
+    steps:
+    - name: Generate deployment summary
+      run: |
+        echo "## 🚀 Web Apps Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment:** \`${{ needs.prepare-deployment.outputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Image Tag:** \`${{ needs.prepare-deployment.outputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Deployment status
+        echo "### 📋 Deployment Status" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Preparation | ${{ needs.prepare-deployment.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Deployment | ${{ needs.deploy-web-apps.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Verification | ${{ needs.verify-deployment.result == 'success' && '✅ Passed' || needs.verify-deployment.result == 'skipped' && '⏭️ Skipped' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [[ "${{ needs.deploy-web-apps.result }}" == "success" ]]; then
+          echo "### 🎉 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Applications Updated:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **Client:** https://${{ needs.prepare-deployment.outputs.client_app_name }}.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Server:** https://${{ needs.prepare-deployment.outputs.server_app_name }}.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Container Images:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **Client:** \`${{ needs.prepare-deployment.outputs.client_image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Server:** \`${{ needs.prepare-deployment.outputs.server_image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔧 Environment Variables" >> $GITHUB_STEP_SUMMARY
+          echo "Application settings and environment variables are preserved from previous configuration." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please review the deployment logs and ensure:" >> $GITHUB_STEP_SUMMARY
+          echo "- Azure service principal has proper permissions" >> $GITHUB_STEP_SUMMARY
+          echo "- Container images exist and are accessible" >> $GITHUB_STEP_SUMMARY
+          echo "- Web Apps are properly configured" >> $GITHUB_STEP_SUMMARY
+        fi

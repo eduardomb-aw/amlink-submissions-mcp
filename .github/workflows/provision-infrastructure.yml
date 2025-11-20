@@ -1,0 +1,185 @@
+name: Provision Web Apps Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - 'staging'
+          - 'production'
+      location:
+        description: 'Azure region'
+        required: true
+        default: 'East US 2'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  provision-infrastructure:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Azure Login
+      run: |
+        az login --service-principal \
+          --username "${{ secrets.AZURE_CLIENT_ID }}" \
+          --password "${{ secrets.AZURE_CLIENT_SECRET }}" \
+          --tenant "${{ secrets.AZURE_TENANT_ID }}"
+        
+        az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+        echo "✅ Logged in to Azure"
+
+    - name: Set environment variables
+      run: |
+        ENV="${{ github.event.inputs.environment }}"
+        LOCATION="${{ github.event.inputs.location }}"
+        
+        if [[ "$ENV" == "production" ]]; then
+          echo "RESOURCE_GROUP=rg-amlink-submissions-mcp-prod" >> $GITHUB_ENV
+          echo "CLIENT_APP_NAME=app-amlink-submissions-mcp-prod-client" >> $GITHUB_ENV
+          echo "SERVER_APP_NAME=app-amlink-submissions-mcp-prod-server" >> $GITHUB_ENV
+          echo "APP_SERVICE_PLAN=asp-amlink-submissions-mcp-prod" >> $GITHUB_ENV
+        else
+          echo "RESOURCE_GROUP=rg-amlink-submissions-mcp-staging" >> $GITHUB_ENV
+          echo "CLIENT_APP_NAME=app-amlink-submissions-mcp-staging-client" >> $GITHUB_ENV
+          echo "SERVER_APP_NAME=app-amlink-submissions-mcp-staging-server" >> $GITHUB_ENV
+          echo "APP_SERVICE_PLAN=asp-amlink-submissions-mcp-staging" >> $GITHUB_ENV
+        fi
+        
+        echo "LOCATION=$LOCATION" >> $GITHUB_ENV
+        echo "ENVIRONMENT=$ENV" >> $GITHUB_ENV
+
+    - name: Create Resource Group
+      run: |
+        echo "🏗️ Creating resource group: $RESOURCE_GROUP"
+        az group create \
+          --name "$RESOURCE_GROUP" \
+          --location "$LOCATION" \
+          --tags \
+            environment="$ENVIRONMENT" \
+            project="amlink-mcp" \
+            managed-by="github-actions"
+        
+        echo "✅ Resource group created successfully"
+
+    - name: Create App Service Plan
+      run: |
+        echo "🏗️ Creating App Service Plan: $APP_SERVICE_PLAN"
+        az appservice plan create \
+          --name "$APP_SERVICE_PLAN" \
+          --resource-group "$RESOURCE_GROUP" \
+          --location "$LOCATION" \
+          --is-linux \
+          --sku "B1" \
+          --tags \
+            environment="$ENVIRONMENT" \
+            project="amlink-mcp"
+        
+        echo "✅ App Service Plan created successfully"
+
+    - name: Create Client Web App
+      run: |
+        echo "🌐 Creating Client Web App: $CLIENT_APP_NAME"
+        az webapp create \
+          --name "$CLIENT_APP_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
+          --plan "$APP_SERVICE_PLAN" \
+          --deployment-container-image-name "ghcr.io/eduardomb-aw/amlink-submissions-mcp-client:latest" \
+          --tags \
+            environment="$ENVIRONMENT" \
+            project="amlink-mcp" \
+            app-type="client"
+        
+        # Configure container registry
+        az webapp config container set \
+          --name "$CLIENT_APP_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
+          --container-registry-url "https://ghcr.io" \
+          --container-registry-user "${{ github.actor }}" \
+          --container-registry-password "${{ secrets.GITHUB_TOKEN }}"
+        
+        echo "✅ Client Web App created successfully"
+
+    - name: Create Server Web App
+      run: |
+        echo "🖥️ Creating Server Web App: $SERVER_APP_NAME"
+        az webapp create \
+          --name "$SERVER_APP_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
+          --plan "$APP_SERVICE_PLAN" \
+          --deployment-container-image-name "ghcr.io/eduardomb-aw/amlink-submissions-mcp-server:latest" \
+          --tags \
+            environment="$ENVIRONMENT" \
+            project="amlink-mcp" \
+            app-type="server"
+        
+        # Configure container registry
+        az webapp config container set \
+          --name "$SERVER_APP_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
+          --container-registry-url "https://ghcr.io" \
+          --container-registry-user "${{ github.actor }}" \
+          --container-registry-password "${{ secrets.GITHUB_TOKEN }}"
+        
+        echo "✅ Server Web App created successfully"
+
+    - name: Configure Basic Settings
+      run: |
+        echo "⚙️ Configuring basic application settings..."
+        
+        # Configure client app settings
+        az webapp config appsettings set \
+          --name "$CLIENT_APP_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
+          --settings \
+            ASPNETCORE_ENVIRONMENT="$ENVIRONMENT" \
+            ASPNETCORE_URLS="http://+:8080" \
+            WEBSITES_PORT="8080" \
+            McpServer__Url="https://$SERVER_APP_NAME.azurewebsites.net/" \
+            McpServer__BrowserUrl="https://$SERVER_APP_NAME.azurewebsites.net/"
+        
+        # Configure server app settings
+        az webapp config appsettings set \
+          --name "$SERVER_APP_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
+          --settings \
+            ASPNETCORE_ENVIRONMENT="$ENVIRONMENT" \
+            ASPNETCORE_URLS="http://+:8080" \
+            WEBSITES_PORT="8080"
+        
+        echo "✅ Basic settings configured"
+
+    - name: Infrastructure Summary
+      run: |
+        CLIENT_URL="https://$CLIENT_APP_NAME.azurewebsites.net"
+        SERVER_URL="https://$SERVER_APP_NAME.azurewebsites.net"
+        
+        echo "## 🏗️ Infrastructure Provisioned Successfully" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment:** \`$ENVIRONMENT\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Location:** \`$LOCATION\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Resources Created" >> $GITHUB_STEP_SUMMARY
+        echo "- **Resource Group:** \`$RESOURCE_GROUP\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **App Service Plan:** \`$APP_SERVICE_PLAN\` (B1 Linux)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Client Web App:** [\`$CLIENT_APP_NAME\`]($CLIENT_URL)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Server Web App:** [\`$SERVER_APP_NAME\`]($SERVER_URL)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🌐 Application URLs" >> $GITHUB_STEP_SUMMARY
+        echo "- **Client (Web UI):** [$CLIENT_URL]($CLIENT_URL)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Server (API/MCP):** [$SERVER_URL]($SERVER_URL)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ⚙️ Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "1. Configure Identity Server settings in application configuration" >> $GITHUB_STEP_SUMMARY
+        echo "2. Set API keys and secrets in Web App configuration" >> $GITHUB_STEP_SUMMARY
+        echo "3. Deploy application containers using the deployment pipeline" >> $GITHUB_STEP_SUMMARY
+        echo "4. Test the applications and verify functionality" >> $GITHUB_STEP_SUMMARY
