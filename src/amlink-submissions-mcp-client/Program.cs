@@ -73,21 +73,17 @@ if (builder.Environment.IsDevelopment())
 }
 else
 {
-    // Configure data protection for containers - use ephemeral in-memory keys for stateless containers
-    // This completely eliminates data protection warnings and key persistence issues
+    // Configure data protection for containers with persistent key storage
+    var keyRingPath = builder.Configuration.GetValue<string>("DataProtection:KeyRingPath") ?? "/tmp/dp-keys";
+    
     builder.Services.AddDataProtection()
         .SetApplicationName("amlink-mcp-client")
-        .SetDefaultKeyLifetime(TimeSpan.FromHours(24)) // Shorter lifetime for container scenarios
-        .DisableAutomaticKeyGeneration(); // Disable automatic key generation to reduce warnings
+        .PersistKeysToFileSystem(new DirectoryInfo(keyRingPath))
+        .SetDefaultKeyLifetime(TimeSpan.FromDays(90)); // Longer lifetime for stability
     
-    // For containers, configure antiforgery to be more resilient to key changes
-    builder.Services.Configure<Microsoft.AspNetCore.Antiforgery.AntiforgeryOptions>(options =>
-    {
-        options.Cookie.Name = "__RequestVerificationToken";
-        options.HeaderName = "RequestVerificationToken";
-        // Make antiforgery more resilient to data protection key changes
-        options.Cookie.Expiration = TimeSpan.FromHours(1);
-    });
+    // Ensure the key ring directory exists
+    Directory.CreateDirectory(keyRingPath);
+    Console.WriteLine($"Data protection keys will be stored in: {keyRingPath}");
 }
 
 builder.Services.AddSession(options =>
@@ -114,6 +110,9 @@ builder.Services.AddAntiforgery(options =>
         // For containerized environments, use more lenient settings
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.Name = "__RequestVerificationToken";
+        options.Cookie.Expiration = TimeSpan.FromMinutes(20); // Shorter expiration to reduce stale token issues
+        options.Cookie.IsEssential = true;
         // Suppress data protection warnings in containers
         options.SuppressXFrameOptionsHeader = false;
     }

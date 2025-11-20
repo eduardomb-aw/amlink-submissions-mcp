@@ -180,6 +180,7 @@ jobs:
             "IdentityServer__ResponseMode=query" \
             "McpServer__Url=${SERVER_URL}/" \
             "McpServer__BrowserUrl=${SERVER_URL}/" \
+            "DataProtection__KeyRingPath=/home/site/wwwroot/dp-keys" \
             "DetailedErrors=true"
         
         echo "✅ Client app environment variables configured"
