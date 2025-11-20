@@ -177,11 +177,30 @@ This project includes GitHub Actions workflows for:
 
 ## 🤝 Contributing
 
+We welcome contributions! Here's how to get started:
+
+### For New Contributors
+
+1. **Review planned improvements**: See [TASKS.md](TASKS.md) for prioritized tasks
+2. **Read the implementation guide**: Check [TASK-IMPLEMENTATION-GUIDE.md](docs/TASK-IMPLEMENTATION-GUIDE.md)
+3. **Choose a task**: Pick from [POTENTIAL-IMPROVEMENTS.md](docs/POTENTIAL-IMPROVEMENTS.md)
+
+### Development Workflow
+
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. Make your changes following our [coding standards](.github/copilot-instructions.md)
+4. Add tests for your changes
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+### Documentation
+
+- **[TASKS.md](TASKS.md)** - Prioritized improvement tasks with detailed specifications
+- **[POTENTIAL-IMPROVEMENTS.md](docs/POTENTIAL-IMPROVEMENTS.md)** - Comprehensive analysis of improvement opportunities
+- **[TASK-IMPLEMENTATION-GUIDE.md](docs/TASK-IMPLEMENTATION-GUIDE.md)** - Step-by-step guide for implementing tasks
+- **[DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Development setup and guidelines
 
 ## 📄 License
 

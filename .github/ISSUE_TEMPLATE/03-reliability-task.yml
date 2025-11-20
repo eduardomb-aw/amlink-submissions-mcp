@@ -1,0 +1,120 @@
+name: Reliability Task
+description: Create a task for reliability and resilience improvements
+title: "[Reliability] "
+labels: ["enhancement", "reliability"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for contributing to AmLink Submissions MCP! Use this template for reliability and resilience tasks.
+        
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: What is the priority of this task?
+      options:
+        - High
+        - Medium
+        - Low
+      default: 1
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: reliability-type
+    attributes:
+      label: Reliability Improvement Type
+      description: What type of reliability improvement is this?
+      options:
+        - HTTP Client Resilience
+        - Circuit Breaker
+        - Retry Logic
+        - Health Checks
+        - Timeouts
+        - Error Recovery
+        - Graceful Degradation
+      multiple: true
+    validations:
+      required: true
+      
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the reliability issue and proposed improvement
+      placeholder: What reliability pattern needs to be implemented?
+    validations:
+      required: true
+      
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current Behavior
+      description: What happens now when things fail?
+      placeholder: Describe the current failure modes and recovery
+      
+  - type: textarea
+    id: desired-behavior
+    attributes:
+      label: Desired Behavior
+      description: What should happen when things fail?
+      placeholder: Describe how failures should be handled
+      
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Approach
+      description: How should this be implemented?
+      placeholder: |
+        1. Add NuGet package: Microsoft.Extensions.Http.Resilience
+        2. Configure retry policy with exponential backoff
+        3. Add circuit breaker with 50% failure threshold
+        
+  - type: textarea
+    id: files-affected
+    attributes:
+      label: Files Affected
+      description: List the files that need to be modified
+      placeholder: |
+        - src/amlink-submissions-mcp-server/Program.cs
+        - src/amlink-submissions-mcp-server/Tools/SubmissionApiTools.cs
+    validations:
+      required: true
+      
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What must be done for this task to be complete?
+      placeholder: |
+        - [ ] Retry policy configured
+        - [ ] Circuit breaker implemented
+        - [ ] Timeouts configured
+        - [ ] Integration tests verify resilience
+        - [ ] Failures are logged appropriately
+    validations:
+      required: true
+      
+  - type: input
+    id: effort
+    attributes:
+      label: Estimated Effort
+      description: How much time is needed?
+      placeholder: "e.g., 1-2 days"
+      
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: What other tasks must be completed first?
+      placeholder: "e.g., Logging task should be completed first"
+      
+  - type: textarea
+    id: related-docs
+    attributes:
+      label: Related Documentation
+      description: Links to relevant documentation
+      placeholder: |
+        - [TASKS.md](../TASKS.md#task-5-add-http-client-resilience)
+        - [Polly Documentation](https://github.com/App-vNext/Polly)

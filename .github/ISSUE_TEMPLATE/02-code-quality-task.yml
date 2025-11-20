@@ -1,0 +1,114 @@
+name: Code Quality Task
+description: Create a task for code quality improvements
+title: "[Code Quality] "
+labels: ["enhancement", "code-quality"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for contributing to AmLink Submissions MCP! Use this template for code quality tasks.
+        
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: What is the priority of this task?
+      options:
+        - High
+        - Medium
+        - Low
+      default: 0
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: quality-type
+    attributes:
+      label: Quality Improvement Type
+      description: What type of quality improvement is this?
+      options:
+        - Input Validation
+        - Error Handling
+        - Logging
+        - Code Style
+        - Refactoring
+        - Documentation
+      multiple: true
+    validations:
+      required: true
+      
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the code quality issue and proposed improvement
+      placeholder: What needs to be improved and why?
+    validations:
+      required: true
+      
+  - type: textarea
+    id: current-state
+    attributes:
+      label: Current State
+      description: Describe the current state of the code
+      placeholder: |
+        ```csharp
+        // Current code example
+        ```
+        
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the proposed improvement
+      placeholder: |
+        ```csharp
+        // Proposed code example
+        ```
+      
+  - type: textarea
+    id: files-affected
+    attributes:
+      label: Files Affected
+      description: List the files that need to be modified
+      placeholder: |
+        - src/amlink-submissions-mcp-server/Tools/SubmissionApiTools.cs
+        - src/amlink-submissions-mcp-server/Program.cs
+    validations:
+      required: true
+      
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What must be done for this task to be complete?
+      placeholder: |
+        - [ ] All input parameters are validated
+        - [ ] Proper exceptions are thrown with descriptive messages
+        - [ ] Unit tests cover validation scenarios
+        - [ ] Documentation is updated
+    validations:
+      required: true
+      
+  - type: input
+    id: effort
+    attributes:
+      label: Estimated Effort
+      description: How much time is needed?
+      placeholder: "e.g., 1-2 days"
+      
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: What other tasks must be completed first?
+      placeholder: "e.g., Task #3 must be completed first"
+      
+  - type: textarea
+    id: related-docs
+    attributes:
+      label: Related Documentation
+      description: Links to relevant documentation
+      placeholder: |
+        - [TASKS.md](../TASKS.md)
+        - [POTENTIAL-IMPROVEMENTS.md](../docs/POTENTIAL-IMPROVEMENTS.md)

@@ -1,0 +1,100 @@
+name: Testing Task
+description: Create a task for implementing or improving tests
+title: "[Testing] "
+labels: ["enhancement", "testing"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for contributing to AmLink Submissions MCP! Use this template for testing-related tasks.
+        
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: What is the priority of this task?
+      options:
+        - High
+        - Medium
+        - Low
+      default: 0
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: test-type
+    attributes:
+      label: Test Type
+      description: What type of tests are needed?
+      options:
+        - Unit Tests
+        - Integration Tests
+        - Performance Tests
+        - Test Infrastructure
+        - All of the above
+      multiple: true
+    validations:
+      required: true
+      
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the testing task
+      placeholder: What tests need to be added or improved?
+    validations:
+      required: true
+      
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What files or components need testing?
+      placeholder: |
+        - src/amlink-submissions-mcp-server/Tools/SubmissionApiTools.cs
+        - src/amlink-submissions-mcp-client/Services/McpService.cs
+    validations:
+      required: true
+      
+  - type: textarea
+    id: coverage-target
+    attributes:
+      label: Coverage Target
+      description: What is the target code coverage?
+      placeholder: "e.g., 80% overall, 90% for critical paths"
+      
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What must be done for this task to be complete?
+      placeholder: |
+        - [ ] All methods have unit tests
+        - [ ] Edge cases are covered
+        - [ ] Tests pass in CI
+        - [ ] Code coverage meets target
+    validations:
+      required: true
+      
+  - type: input
+    id: effort
+    attributes:
+      label: Estimated Effort
+      description: How much time is needed?
+      placeholder: "e.g., 2-3 days"
+      
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: What other tasks must be completed first?
+      placeholder: "e.g., Task #5 must be completed first"
+      
+  - type: textarea
+    id: related-docs
+    attributes:
+      label: Related Documentation
+      description: Links to relevant documentation
+      placeholder: |
+        - [TASKS.md](../TASKS.md#task-1-add-comprehensive-test-suite)
+        - [POTENTIAL-IMPROVEMENTS.md](../docs/POTENTIAL-IMPROVEMENTS.md)
