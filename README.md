@@ -198,9 +198,29 @@ We welcome contributions! Here's how to get started:
 ### Documentation
 
 - **[TASKS.md](TASKS.md)** - Prioritized improvement tasks with detailed specifications
+- **[ISSUE-CREATION-SUMMARY.md](ISSUE-CREATION-SUMMARY.md)** - Summary of GitHub issues to create
 - **[POTENTIAL-IMPROVEMENTS.md](docs/POTENTIAL-IMPROVEMENTS.md)** - Comprehensive analysis of improvement opportunities
 - **[TASK-IMPLEMENTATION-GUIDE.md](docs/TASK-IMPLEMENTATION-GUIDE.md)** - Step-by-step guide for implementing tasks
+- **[CREATE-ISSUES-GUIDE.md](docs/CREATE-ISSUES-GUIDE.md)** - Guide for creating GitHub issues
 - **[DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Development setup and guidelines
+
+### Creating GitHub Issues
+
+Based on our repository analysis (PR #3 and #6), we have identified 10 improvement tasks. To create the corresponding GitHub issues:
+
+**Automated (Recommended):**
+```bash
+# Authenticate with GitHub CLI
+gh auth login
+
+# Run the issue creation script
+./scripts/create-issues.sh
+```
+
+**Manual:**
+See [CREATE-ISSUES-GUIDE.md](docs/CREATE-ISSUES-GUIDE.md) for step-by-step instructions.
+
+For a complete overview, see [ISSUE-CREATION-SUMMARY.md](ISSUE-CREATION-SUMMARY.md).
 
 ## 📄 License
 
