@@ -138,6 +138,11 @@ The deployment pipeline automatically configures:
 - Identity Server authentication settings
 - External API endpoints (AmLink Submission API)
 - MCP server documentation URLs
+
+**Infrastructure:**
+- VNet integration with ArchPlayGroundAFRG-1 (East US 2)
+- Subnet delegation for Web Apps connectivity
+- Internal resource access configuration
 - OAuth callback and response handling
 
 **Manual Setup (Sensitive Data):**

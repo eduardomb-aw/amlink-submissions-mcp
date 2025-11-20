@@ -168,6 +168,112 @@ jobs:
         
         echo "✅ Basic settings configured"
 
+    - name: Configure VNet Integration
+      run: |
+        echo "🌐 Configuring VNet Integration..."
+        
+        # VNet configuration for Architecture Playground
+        VNET_RESOURCE_GROUP="NewAFormentiRG"
+        VNET_NAME="ArchPlayGroundAFRG-1"
+        SUBNET_NAME="5"
+        
+        # Get VNet and subnet resource IDs
+        VNET_ID=$(az network vnet show \
+          --resource-group "$VNET_RESOURCE_GROUP" \
+          --name "$VNET_NAME" \
+          --query "id" \
+          --output tsv)
+        
+        SUBNET_ID=$(az network vnet subnet show \
+          --resource-group "$VNET_RESOURCE_GROUP" \
+          --vnet-name "$VNET_NAME" \
+          --name "$SUBNET_NAME" \
+          --query "id" \
+          --output tsv)
+        
+        if [[ -z "$VNET_ID" || -z "$SUBNET_ID" ]]; then
+          echo "❌ Failed to find VNet or subnet"
+          echo "VNet ID: $VNET_ID"
+          echo "Subnet ID: $SUBNET_ID"
+          exit 1
+        fi
+        
+        echo "✅ Found VNet: $VNET_ID"
+        echo "✅ Found Subnet: $SUBNET_ID"
+        
+        # Check if subnet is delegated to Web Apps
+        DELEGATIONS=$(az network vnet subnet show \
+          --resource-group "$VNET_RESOURCE_GROUP" \
+          --vnet-name "$VNET_NAME" \
+          --name "$SUBNET_NAME" \
+          --query "delegations[?serviceName=='Microsoft.Web/serverFarms'].serviceName" \
+          --output tsv)
+        
+        if [[ -z "$DELEGATIONS" ]]; then
+          echo "🔧 Adding subnet delegation for Web Apps..."
+          az network vnet subnet update \
+            --resource-group "$VNET_RESOURCE_GROUP" \
+            --vnet-name "$VNET_NAME" \
+            --name "$SUBNET_NAME" \
+            --delegations Microsoft.Web/serverFarms \
+            --output none
+          
+          if [[ $? -eq 0 ]]; then
+            echo "✅ Subnet delegation added successfully"
+          else
+            echo "❌ Failed to add subnet delegation"
+            exit 1
+          fi
+        else
+          echo "✅ Subnet already delegated to Microsoft.Web/serverFarms"
+        fi
+        
+        # Configure VNet integration for Client Web App
+        echo "🔗 Configuring Client Web App VNet integration..."
+        az webapp vnet-integration add \
+          --resource-group "$RESOURCE_GROUP" \
+          --name "$CLIENT_APP_NAME" \
+          --vnet "$VNET_ID" \
+          --subnet "$SUBNET_ID" \
+          --output none 2>/dev/null || echo "⚠️ Client App VNet integration may already exist"
+        
+        # Verify client VNet integration
+        CLIENT_VNET_CONFIG=$(az webapp vnet-integration list \
+          --resource-group "$RESOURCE_GROUP" \
+          --name "$CLIENT_APP_NAME" \
+          --query "[0].vnetResourceId" \
+          --output tsv 2>/dev/null)
+        
+        if [[ -n "$CLIENT_VNET_CONFIG" ]]; then
+          echo "✅ Client Web App VNet integration verified"
+        else
+          echo "⚠️ Client Web App VNet integration not found"
+        fi
+        
+        # Configure VNet integration for Server Web App
+        echo "🔗 Configuring Server Web App VNet integration..."
+        az webapp vnet-integration add \
+          --resource-group "$RESOURCE_GROUP" \
+          --name "$SERVER_APP_NAME" \
+          --vnet "$VNET_ID" \
+          --subnet "$SUBNET_ID" \
+          --output none 2>/dev/null || echo "⚠️ Server App VNet integration may already exist"
+        
+        # Verify server VNet integration
+        SERVER_VNET_CONFIG=$(az webapp vnet-integration list \
+          --resource-group "$RESOURCE_GROUP" \
+          --name "$SERVER_APP_NAME" \
+          --query "[0].vnetResourceId" \
+          --output tsv 2>/dev/null)
+        
+        if [[ -n "$SERVER_VNET_CONFIG" ]]; then
+          echo "✅ Server Web App VNet integration verified"
+        else
+          echo "⚠️ Server Web App VNet integration not found"
+        fi
+        
+        echo "✅ VNet Integration configuration completed"
+
     - name: Infrastructure Summary
       run: |
         CLIENT_URL="https://$CLIENT_APP_NAME.azurewebsites.net"
@@ -183,13 +289,14 @@ jobs:
         echo "- **App Service Plan:** \`$APP_SERVICE_PLAN\` (B1 Linux)" >> $GITHUB_STEP_SUMMARY
         echo "- **Client Web App:** [\`$CLIENT_APP_NAME\`]($CLIENT_URL)" >> $GITHUB_STEP_SUMMARY
         echo "- **Server Web App:** [\`$SERVER_APP_NAME\`]($SERVER_URL)" >> $GITHUB_STEP_SUMMARY
+        echo "- **VNet Integration:** \`ArchPlayGroundAFRG-1/5\` (East US 2)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 🌐 Application URLs" >> $GITHUB_STEP_SUMMARY
         echo "- **Client (Web UI):** [$CLIENT_URL]($CLIENT_URL)" >> $GITHUB_STEP_SUMMARY
         echo "- **Server (API/MCP):** [$SERVER_URL]($SERVER_URL)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### ⚙️ Next Steps" >> $GITHUB_STEP_SUMMARY
-        echo "1. Configure Identity Server settings in application configuration" >> $GITHUB_STEP_SUMMARY
-        echo "2. Set API keys and secrets in Web App configuration" >> $GITHUB_STEP_SUMMARY
-        echo "3. Deploy application containers using the deployment pipeline" >> $GITHUB_STEP_SUMMARY
-        echo "4. Test the applications and verify functionality" >> $GITHUB_STEP_SUMMARY
+        echo "1. Run deployment pipeline to configure applications and deploy containers" >> $GITHUB_STEP_SUMMARY
+        echo "2. Verify VNet integration and internal resource connectivity" >> $GITHUB_STEP_SUMMARY
+        echo "3. Test Identity Server authentication and MCP functionality" >> $GITHUB_STEP_SUMMARY
+        echo "4. Configure any additional network security rules if needed" >> $GITHUB_STEP_SUMMARY
