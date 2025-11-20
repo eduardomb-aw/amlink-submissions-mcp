@@ -34,6 +34,10 @@ public partial class IndexModel : PageModel
     {
         _logger.LogInformation("Index page loaded. Authentication status: {IsAuthenticated}", IsAuthenticated);
         
+        // Handle messages from redirects (TempData)
+        SuccessMessage = TempData["SuccessMessage"] as string;
+        ErrorMessage = TempData["ErrorMessage"] as string;
+        
         // If already authenticated, try to get tools automatically
         if (IsAuthenticated)
         {
@@ -41,7 +45,10 @@ public partial class IndexModel : PageModel
             {
                 AvailableTools = await _mcpService.GetAvailableToolsAsync();
                 IsConnected = true;
-                SuccessMessage = $"Connected to MCP server. Found {AvailableTools.Count} available tools.";
+                if (string.IsNullOrEmpty(SuccessMessage))
+                {
+                    SuccessMessage = $"Connected to MCP server. Found {AvailableTools.Count} available tools.";
+                }
                 _logger.LogInformation("Successfully connected to MCP server with {ToolCount} tools", AvailableTools.Count);
             }
             catch (UnauthorizedAccessException)
@@ -159,7 +166,7 @@ public partial class IndexModel : PageModel
         AvailableTools = null;
         ToolResult = null;
         AuthUrl = null;
-        SuccessMessage = "Authentication cleared successfully.";
-        return Page();
+        TempData["SuccessMessage"] = "Authentication cleared successfully.";
+        return RedirectToPage();
     }
 }

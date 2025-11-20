@@ -35,14 +35,14 @@
             <div class="card-body">
                 @if (Model.IsAuthenticated)
                 {
-                    <p><span class="badge bg-success">Authenticated</span> Ready to connect to MCP server.</p>
+                    <p><span class="badge bg-success">✓ Authenticated</span> Ready to connect to MCP server.</p>
                     <form method="post" asp-page-handler="ClearToken" class="d-inline">
                         <button type="submit" class="btn btn-outline-warning btn-sm">Clear Authentication</button>
                     </form>
                 }
                 else
                 {
-                    <p><span class="badge bg-warning">Not Authenticated</span> Please authenticate first.</p>
+                    <p><span class="badge bg-warning text-dark">⚠️ Not Authenticated</span> Please authenticate first.</p>
                     <form method="post" asp-page-handler="Authenticate" class="d-inline">
                         <button type="submit" class="btn btn-primary">Start Authentication</button>
                     </form>
@@ -72,11 +72,11 @@
             <div class="card-body">
                 @if (Model.IsConnected)
                 {
-                    <p><span class="badge bg-success">Connected</span> Successfully connected to MCP server.</p>
+                    <p><span class="badge bg-success">✓ Connected</span> Successfully connected to MCP server.</p>
                 }
                 else
                 {
-                    <p><span class="badge bg-secondary">Disconnected</span> Not connected to MCP server.</p>
+                    <p><span class="badge bg-secondary">○ Disconnected</span> Not connected to MCP server.</p>
                     @if (Model.IsAuthenticated)
                     {
                         <form method="post" asp-page-handler="Connect" class="d-inline">

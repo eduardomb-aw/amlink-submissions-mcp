@@ -150,7 +150,33 @@ if (useHttpsRedirection)
     app.UseHttpsRedirection();
 }
 
-app.UseStaticFiles();
+// Configure static files with proper caching and content types
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // Set cache headers for static files
+        const int durationInSeconds = 60 * 60 * 24 * 30; // 30 days
+        ctx.Context.Response.Headers.Append("Cache-Control", $"public,max-age={durationInSeconds}");
+        
+        // Ensure proper content types for common files
+        var extension = Path.GetExtension(ctx.File.Name).ToLowerInvariant();
+        switch (extension)
+        {
+            case ".css":
+                ctx.Context.Response.ContentType = "text/css";
+                break;
+            case ".js":
+                ctx.Context.Response.ContentType = "application/javascript";
+                break;
+            case ".woff":
+            case ".woff2":
+                ctx.Context.Response.ContentType = "font/woff";
+                break;
+        }
+    }
+});
+
 app.UseRouting();
 app.UseSession();
 

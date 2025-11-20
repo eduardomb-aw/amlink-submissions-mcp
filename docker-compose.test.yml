@@ -1,0 +1,80 @@
+# Test Stack - Current + Fixed Images
+# Project: amlink-submissions-mcp-test
+services:
+  # Current Deployed Images
+  amlink-mcp-server-current:
+    image: ghcr.io/eduardomb-aw/amlink-submissions-mcp-server:latest
+    container_name: amlink-mcp-server-current
+    ports:
+      - "7070:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - Server__Url=http://localhost:7070
+      - IdentityServer__ClientSecret=${IDENTITY_SERVER_CLIENT_SECRET:-test-secret}
+      - IdentityServer__Url=https://identitydev.amwins.com
+      - IdentityServer__ClientId=al-mcp-client
+      - ExternalApis__SubmissionApi__BaseUrl=https://api.amwins.com
+      - ExternalApis__SubmissionApi__ApiKey=test-key
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-test-key}
+    networks:
+      - test-network
+
+  amlink-mcp-client-current:
+    image: ghcr.io/eduardomb-aw/amlink-submissions-mcp-client:latest
+    container_name: amlink-mcp-client-current
+    ports:
+      - "6060:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - McpServer__Url=http://amlink-mcp-server-current:80
+      - McpServer__BrowserUrl=http://localhost:7070
+      - IdentityServer__RedirectUri=http://localhost:6060/oauth/callback
+      - IdentityServer__ClientSecret=${IDENTITY_SERVER_CLIENT_SECRET:-test-secret}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-test-key}
+    depends_on:
+      - amlink-mcp-server-current
+    networks:
+      - test-network
+
+  # Fixed Images
+  amlink-mcp-server-fixed:
+    image: amlink-mcp-server-fixed:latest
+    container_name: amlink-mcp-server-fixed
+    ports:
+      - "7071:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - Server__Url=http://localhost:7071
+      - IdentityServer__ClientSecret=${IDENTITY_SERVER_CLIENT_SECRET:-test-secret}
+      - IdentityServer__Url=https://identitydev.amwins.com
+      - IdentityServer__ClientId=al-mcp-client
+      - ExternalApis__SubmissionApi__BaseUrl=https://api.amwins.com
+      - ExternalApis__SubmissionApi__ApiKey=test-key
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-test-key}
+    networks:
+      - test-network
+
+  amlink-mcp-client-fixed:
+    image: amlink-mcp-client-fixed:latest
+    container_name: amlink-mcp-client-fixed
+    ports:
+      - "6061:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - McpServer__Url=http://amlink-mcp-server-fixed:80
+      - McpServer__BrowserUrl=http://localhost:7071
+      - IdentityServer__RedirectUri=http://localhost:6061/oauth/callback
+      - IdentityServer__ClientSecret=${IDENTITY_SERVER_CLIENT_SECRET:-test-secret}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-test-key}
+    depends_on:
+      - amlink-mcp-server-fixed
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge

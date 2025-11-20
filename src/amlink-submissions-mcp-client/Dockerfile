@@ -16,5 +16,18 @@ RUN dotnet publish "amlink-submissions-mcp-client.csproj" -c Release -o /app/pub
 
 FROM base AS final
 WORKDIR /app
+
+# Create directory for data protection keys and set permissions
+RUN mkdir -p /tmp/dp-keys && chmod 755 /tmp/dp-keys
+
+# Set environment variables for production
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_URLS=http://+:80
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+
 COPY --from=publish /app/publish .
+
+# Ensure static files are properly accessible
+RUN chmod -R 755 /app/wwwroot || true
+
 ENTRYPOINT ["dotnet", "amlink-submissions-mcp-client.dll"]
