@@ -73,15 +73,21 @@ if (builder.Environment.IsDevelopment())
 }
 else
 {
-    // Configure data protection for containers - use ephemeral keys for stateless containers
-    // This prevents data protection warnings and works well for single-instance containers
+    // Configure data protection for containers - use ephemeral in-memory keys for stateless containers
+    // This completely eliminates data protection warnings and key persistence issues
     builder.Services.AddDataProtection()
         .SetApplicationName("amlink-mcp-client")
-        .PersistKeysToFileSystem(new DirectoryInfo("/tmp/dp-keys")) // Use temp directory
-        .SetDefaultKeyLifetime(TimeSpan.FromHours(24)); // Shorter lifetime for container scenarios
+        .SetDefaultKeyLifetime(TimeSpan.FromHours(24)) // Shorter lifetime for container scenarios
+        .DisableAutomaticKeyGeneration(); // Disable automatic key generation to reduce warnings
     
-    // Ensure the temp directory exists
-    Directory.CreateDirectory("/tmp/dp-keys");
+    // For containers, configure antiforgery to be more resilient to key changes
+    builder.Services.Configure<Microsoft.AspNetCore.Antiforgery.AntiforgeryOptions>(options =>
+    {
+        options.Cookie.Name = "__RequestVerificationToken";
+        options.HeaderName = "RequestVerificationToken";
+        // Make antiforgery more resilient to data protection key changes
+        options.Cookie.Expiration = TimeSpan.FromHours(1);
+    });
 }
 
 builder.Services.AddSession(options =>

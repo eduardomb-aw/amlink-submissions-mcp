@@ -195,6 +195,8 @@ jobs:
           --name "${{ needs.prepare-deployment.outputs.server_app_name }}" \
           --resource-group "${{ needs.prepare-deployment.outputs.resource_group }}" \
           --settings \
+            "Server__Url=${SERVER_URL}" \
+            "Server__ResourceDocumentationUrl=https://docs.example.com/api/weather" \
             "IdentityServer__Url=https://identitydev.amwins.com" \
             "IdentityServer__ClientId=al-mcp-client" \
             "IdentityServer__ClientSecret=${{ secrets.IDENTITY_SERVER_CLIENT_SECRET }}" \
@@ -206,7 +208,6 @@ jobs:
             "ExternalApis__SubmissionApi__RequiredScope=amlink-submission-api" \
             "ExternalApis__SubmissionApi__UserAgent=mcp-submission-client" \
             "ExternalApis__SubmissionApi__Version=1.0" \
-            "Server__ResourceDocumentationUrl=https://docs.example.com/api/weather" \
             "DetailedErrors=true"
         
         echo "✅ Server app environment variables configured"
