@@ -73,9 +73,15 @@ if (builder.Environment.IsDevelopment())
 }
 else
 {
-    // Configure data protection for containers - use simpler approach
+    // Configure data protection for containers - use ephemeral keys for stateless containers
+    // This prevents data protection warnings and works well for single-instance containers
     builder.Services.AddDataProtection()
-        .SetApplicationName("amlink-mcp-client");
+        .SetApplicationName("amlink-mcp-client")
+        .PersistKeysToFileSystem(new DirectoryInfo("/tmp/dp-keys")) // Use temp directory
+        .SetDefaultKeyLifetime(TimeSpan.FromHours(24)); // Shorter lifetime for container scenarios
+    
+    // Ensure the temp directory exists
+    Directory.CreateDirectory("/tmp/dp-keys");
 }
 
 builder.Services.AddSession(options =>
@@ -89,13 +95,21 @@ builder.Services.AddSession(options =>
         : CookieSecurePolicy.Always;
 });
 
-// Configure antiforgery for local development
+// Configure antiforgery for different environments
 builder.Services.AddAntiforgery(options =>
 {
     if (builder.Environment.IsDevelopment())
     {
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.Cookie.SameSite = SameSiteMode.Lax;
+    }
+    else
+    {
+        // For containerized environments, use more lenient settings
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        // Suppress data protection warnings in containers
+        options.SuppressXFrameOptionsHeader = false;
     }
 });
 
@@ -121,9 +135,12 @@ else
     app.UseDeveloperExceptionPage();
 }
 
-// Only redirect to HTTPS in production or when HTTPS is available
-if (!app.Environment.IsDevelopment() || 
-    app.Configuration.GetValue<string>("ASPNETCORE_URLS")?.Contains("https") == true)
+// Configure HTTPS redirection based on environment
+// In Azure Web Apps, HTTPS termination happens at the load balancer
+var useHttpsRedirection = app.Environment.IsDevelopment() && 
+                         app.Configuration.GetValue<string>("ASPNETCORE_URLS")?.Contains("https") == true;
+
+if (useHttpsRedirection)
 {
     app.UseHttpsRedirection();
 }

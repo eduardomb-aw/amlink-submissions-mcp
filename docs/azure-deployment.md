@@ -5,9 +5,12 @@ This guide walks through the automated deployment to Azure Web Apps for Containe
 ## 🎯 Current Deployment Architecture
 
 **Production Environment:**
+- **Subscription**: Architecture Playground (`1f47ba90-a3ed-4e70-a902-570616cb62b0`)
+- **Location**: East US 2
 - **Resource Group**: `rg-amlink-submissions-mcp-staging`
 - **Client Web App**: `app-amlink-submissions-mcp-staging-client`
 - **Server Web App**: `app-amlink-submissions-mcp-staging-server`
+- **VNet Integration**: ArchPlayGroundAFRG-1 (Subnet 5)
 - **Deployment Method**: Automated via GitHub Actions
 - **Configuration**: Automatic environment variable setup
 
@@ -72,12 +75,21 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 
 ### 3. Deploy to Azure
 
-**Option 1: Manual Deployment**
+**Step 1: Provision Infrastructure**
 1. Go to GitHub Actions
-2. Select "Deploy to Azure Container Apps"
+2. Select "Provision Web Apps Infrastructure" 
 3. Click "Run workflow"
-4. Choose environment (staging/production) and image tag
-5. Run deployment
+4. Choose environment (staging/production) and location
+5. This automatically creates:
+   - Resource Group and App Service Plan
+   - Client and Server Web Apps
+   - VNet integration with ArchPlayGroundAFRG-1
+   - Basic container registry authentication
+
+**Step 2: Deploy Applications**
+1. Select "Deploy to Web Apps for Containers"
+2. Choose environment and image tag
+3. This configures all environment variables and deploys containers
 
 **Option 2: Automatic on Release**
 - Creates staging deployment for pre-releases
@@ -105,22 +117,29 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 
 ## 🔧 Infrastructure Components
 
-### **Container Apps Environment**
-- Shared environment for both client and server
-- Integrated with Log Analytics for monitoring
-- Managed networking and ingress
+### **App Service Plan**
+- **SKU:** B1 (Basic) Linux containers
+- **Location:** East US 2
+- **Shared:** Both client and server Web Apps
 
-### **MCP Server Container App**
+### **VNet Integration**
+- **VNet:** ArchPlayGroundAFRG-1 (NewAFormentiRG resource group)
+- **Subnet:** Subnet "5" (10.202.58.128/25)
+- **Delegation:** Microsoft.Web/serverFarms (automatic)
+- **Same Subscription:** Web Apps and VNet in Architecture Playground
+- **Benefits:** Internal resource access, network security
+
+### **MCP Server Web App**
 - **Image:** `ghcr.io/eduardomb-aw/amlink-submissions-mcp-server`
-- **Port:** 9080 (HTTP), auto-HTTPS via ingress
-- **Scaling:** 1-10 replicas based on HTTP requests
-- **Resources:** 0.5 CPU, 1Gi memory per replica
+- **Port:** 8080 (HTTP), auto-HTTPS via Azure
+- **VNet:** Integrated with internal network access
+- **Configuration:** Automatic environment variable setup
 
-### **MCP Client Container App**
+### **MCP Client Web App**
 - **Image:** `ghcr.io/eduardomb-aw/amlink-submissions-mcp-client`
-- **Port:** 8080 (HTTP), auto-HTTPS via ingress  
-- **Scaling:** 1-5 replicas based on HTTP requests
-- **Resources:** 0.5 CPU, 1Gi memory per replica
+- **Port:** 8080 (HTTP), auto-HTTPS via Azure
+- **VNet:** Integrated with internal network access
+- **Configuration:** Automatic Identity Server and MCP settings
 
 ### **Health Monitoring**
 - **Liveness Probes:** Ensure containers are running
