@@ -1,0 +1,36 @@
+name: Test Azure Authentication
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-auth:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Test Azure Login with individual secrets
+      run: |
+        echo "Testing Azure CLI login..."
+        az login --service-principal \
+          --username "${{ secrets.AZURE_CLIENT_ID }}" \
+          --password "${{ secrets.AZURE_CLIENT_SECRET }}" \
+          --tenant "${{ secrets.AZURE_TENANT_ID }}"
+        
+        az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+        az account show --output table
+        
+        echo "✅ Authentication successful!"
+
+    - name: Test Azure Login action
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+      continue-on-error: true
+    
+    - name: Verify login action
+      run: |
+        echo "Testing Azure login action..."
+        az account show --output table || echo "❌ Login action failed"
