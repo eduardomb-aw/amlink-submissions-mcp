@@ -99,13 +99,18 @@ jobs:
             project="amlink-mcp" \
             app-type="client"
         
-        # Configure container registry
-        az webapp config container set \
+        # Configure container registry authentication
+        az webapp config appsettings set \
           --name "$CLIENT_APP_NAME" \
           --resource-group "$RESOURCE_GROUP" \
-          --container-registry-url "https://ghcr.io" \
-          --container-registry-user "${{ github.actor }}" \
-          --container-registry-password "${{ secrets.GITHUB_TOKEN }}"
+          --settings \
+            "DOCKER_REGISTRY_SERVER_URL=https://ghcr.io" \
+            "DOCKER_REGISTRY_SERVER_USERNAME=${{ github.actor }}" \
+            "DOCKER_REGISTRY_SERVER_PASSWORD=${{ secrets.GITHUB_TOKEN }}"
+        
+        # Wait for web app to be fully provisioned
+        echo "⏳ Waiting for client web app to be fully provisioned..."
+        sleep 10
         
         echo "✅ Client Web App created successfully"
 
@@ -122,13 +127,18 @@ jobs:
             project="amlink-mcp" \
             app-type="server"
         
-        # Configure container registry
-        az webapp config container set \
+        # Configure container registry authentication
+        az webapp config appsettings set \
           --name "$SERVER_APP_NAME" \
           --resource-group "$RESOURCE_GROUP" \
-          --container-registry-url "https://ghcr.io" \
-          --container-registry-user "${{ github.actor }}" \
-          --container-registry-password "${{ secrets.GITHUB_TOKEN }}"
+          --settings \
+            "DOCKER_REGISTRY_SERVER_URL=https://ghcr.io" \
+            "DOCKER_REGISTRY_SERVER_USERNAME=${{ github.actor }}" \
+            "DOCKER_REGISTRY_SERVER_PASSWORD=${{ secrets.GITHUB_TOKEN }}"
+        
+        # Wait for web app to be fully provisioned
+        echo "⏳ Waiting for server web app to be fully provisioned..."
+        sleep 10
         
         echo "✅ Server Web App created successfully"
 
