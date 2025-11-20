@@ -81,6 +81,12 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 - Use kebab-case for project names (e.g., `amlink-submissions-mcp-server`)
 - Prefix interfaces with 'I' (e.g., `IMcpService`, `ITokenService`)
 
+### Commit Messages
+- Write succinct, clear commit messages
+- Use imperative mood (e.g., "Add feature" not "Added feature")
+- Keep the subject line under 50 characters when possible
+- Focus on what and why, not how
+
 ### Code Organization
 - Keep configuration classes in `Configuration/` folders
 - Put service interfaces and implementations in `Services/` folders
