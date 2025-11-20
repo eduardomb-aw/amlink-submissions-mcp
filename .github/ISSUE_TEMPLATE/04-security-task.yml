@@ -1,0 +1,113 @@
+name: Security Task
+description: Create a task for security improvements
+title: "[Security] "
+labels: ["enhancement", "security"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for contributing to AmLink Submissions MCP! Use this template for security-related tasks.
+        
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: What is the priority of this task?
+      options:
+        - High
+        - Medium
+        - Low
+      default: 0
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: security-type
+    attributes:
+      label: Security Improvement Type
+      description: What type of security improvement is this?
+      options:
+        - Authentication
+        - Authorization
+        - Token Handling
+        - Input Validation
+        - Secret Management
+        - Encryption
+        - Security Headers
+      multiple: true
+    validations:
+      required: true
+      
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the security issue and proposed improvement
+      placeholder: What security vulnerability or improvement needs to be addressed?
+    validations:
+      required: true
+      
+  - type: textarea
+    id: security-risk
+    attributes:
+      label: Security Risk
+      description: What is the security risk or vulnerability?
+      placeholder: Describe the potential security impact
+      
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: How should this security issue be addressed?
+      placeholder: |
+        1. Replace manual JWT parsing with System.IdentityModel.Tokens.Jwt
+        2. Add signature validation
+        3. Check token expiration
+        
+  - type: textarea
+    id: files-affected
+    attributes:
+      label: Files Affected
+      description: List the files that need to be modified
+      placeholder: |
+        - src/amlink-submissions-mcp-server/Tools/SubmissionApiTools.cs
+        - src/amlink-submissions-mcp-server/amlink-submissions-mcp-server.csproj
+    validations:
+      required: true
+      
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What must be done for this task to be complete?
+      placeholder: |
+        - [ ] Security vulnerability is fixed
+        - [ ] Standard security library is used
+        - [ ] Token validation is comprehensive
+        - [ ] Security tests are added
+        - [ ] Security scan passes
+    validations:
+      required: true
+      
+  - type: input
+    id: effort
+    attributes:
+      label: Estimated Effort
+      description: How much time is needed?
+      placeholder: "e.g., 1-2 days"
+      
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: What other tasks must be completed first?
+      placeholder: "e.g., Testing infrastructure should be in place"
+      
+  - type: textarea
+    id: related-docs
+    attributes:
+      label: Related Documentation
+      description: Links to relevant documentation
+      placeholder: |
+        - [TASKS.md](../TASKS.md#task-4-improve-jwt-token-handling)
+        - [OWASP Guidelines](https://owasp.org/)

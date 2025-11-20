@@ -1,0 +1,122 @@
+name: Observability Task
+description: Create a task for observability improvements (logging, monitoring, tracing)
+title: "[Observability] "
+labels: ["enhancement", "observability"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for contributing to AmLink Submissions MCP! Use this template for observability tasks.
+        
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: What is the priority of this task?
+      options:
+        - High
+        - Medium
+        - Low
+      default: 1
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: observability-type
+    attributes:
+      label: Observability Type
+      description: What type of observability improvement is this?
+      options:
+        - Logging
+        - Monitoring
+        - Tracing
+        - Metrics
+        - Health Checks
+        - Correlation IDs
+        - Alerting
+      multiple: true
+    validations:
+      required: true
+      
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the observability improvement
+      placeholder: What observability feature needs to be added or improved?
+    validations:
+      required: true
+      
+  - type: textarea
+    id: current-state
+    attributes:
+      label: Current State
+      description: What is the current observability state?
+      placeholder: |
+        Currently using Console.WriteLine for logs, no correlation IDs, limited monitoring
+        
+  - type: textarea
+    id: desired-state
+    attributes:
+      label: Desired State
+      description: What should the observability look like?
+      placeholder: |
+        Structured logging with ILogger, correlation IDs on all requests, health checks, metrics
+        
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Approach
+      description: How should this be implemented?
+      placeholder: |
+        1. Replace Console.WriteLine with ILogger
+        2. Add correlation ID middleware
+        3. Include correlation IDs in all log entries
+        
+  - type: textarea
+    id: files-affected
+    attributes:
+      label: Files Affected
+      description: List the files that need to be modified
+      placeholder: |
+        - src/amlink-submissions-mcp-server/Program.cs
+        - src/amlink-submissions-mcp-server/Middleware/CorrelationIdMiddleware.cs (new)
+    validations:
+      required: true
+      
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What must be done for this task to be complete?
+      placeholder: |
+        - [ ] Structured logging implemented
+        - [ ] Correlation IDs added to all requests
+        - [ ] Logs are properly formatted
+        - [ ] Monitoring dashboards updated
+        - [ ] Documentation updated
+    validations:
+      required: true
+      
+  - type: input
+    id: effort
+    attributes:
+      label: Estimated Effort
+      description: How much time is needed?
+      placeholder: "e.g., 1-2 days"
+      
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: What other tasks must be completed first?
+      placeholder: "e.g., None"
+      
+  - type: textarea
+    id: related-docs
+    attributes:
+      label: Related Documentation
+      description: Links to relevant documentation
+      placeholder: |
+        - [TASKS.md](../TASKS.md)
+        - [ASP.NET Core Logging](https://learn.microsoft.com/aspnet/core/fundamentals/logging)
