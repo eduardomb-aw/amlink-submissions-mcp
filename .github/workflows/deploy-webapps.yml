@@ -159,9 +159,59 @@ jobs:
         
         echo "✅ Server web app container updated successfully"
 
+    - name: Configure Client App Environment Variables
+      run: |
+        echo "⚙️ Configuring client app environment variables..."
+        
+        CLIENT_URL="https://${{ needs.prepare-deployment.outputs.client_app_name }}.azurewebsites.net"
+        SERVER_URL="https://${{ needs.prepare-deployment.outputs.server_app_name }}.azurewebsites.net"
+        
+        az webapp config appsettings set \
+          --name "${{ needs.prepare-deployment.outputs.client_app_name }}" \
+          --resource-group "${{ needs.prepare-deployment.outputs.resource_group }}" \
+          --settings \
+            "IdentityServer__Url=https://identitydev.amwins.com" \
+            "IdentityServer__ClientId=al-mcp-client" \
+            "IdentityServer__ServerClientId=al-mcp-client" \
+            "IdentityServer__GrantType=authorization_code" \
+            "IdentityServer__Scopes=amlink-maintenance-api amlink-submission-api amlink-policy-api amlink-doc-api amwins-graphadapter-api" \
+            "IdentityServer__RedirectUri=${CLIENT_URL}/oauth/callback" \
+            "IdentityServer__ResponseMode=query" \
+            "McpServer__Url=${SERVER_URL}/" \
+            "McpServer__BrowserUrl=${SERVER_URL}/" \
+            "DetailedErrors=true"
+        
+        echo "✅ Client app environment variables configured"
+
+    - name: Configure Server App Environment Variables
+      run: |
+        echo "⚙️ Configuring server app environment variables..."
+        
+        SERVER_URL="https://${{ needs.prepare-deployment.outputs.server_app_name }}.azurewebsites.net"
+        CLIENT_URL="https://${{ needs.prepare-deployment.outputs.client_app_name }}.azurewebsites.net"
+        
+        az webapp config appsettings set \
+          --name "${{ needs.prepare-deployment.outputs.server_app_name }}" \
+          --resource-group "${{ needs.prepare-deployment.outputs.resource_group }}" \
+          --settings \
+            "IdentityServer__Url=https://identitydev.amwins.com" \
+            "IdentityServer__ClientId=al-mcp-client" \
+            "IdentityServer__GrantType=authorization_code" \
+            "IdentityServer__Scopes=amlink-maintenance-api amlink-submission-api amlink-policy-api amlink-doc-api amwins-graphadapter-api" \
+            "IdentityServer__RedirectUri=${CLIENT_URL}/callback" \
+            "IdentityServer__ResponseMode=query" \
+            "ExternalApis__SubmissionApi__BaseUrl=https://amlink-submission-api-dev.amwins.net/v1/" \
+            "ExternalApis__SubmissionApi__RequiredScope=amlink-submission-api" \
+            "ExternalApis__SubmissionApi__UserAgent=mcp-submission-client" \
+            "ExternalApis__SubmissionApi__Version=1.0" \
+            "Server__ResourceDocumentationUrl=https://docs.example.com/api/weather" \
+            "DetailedErrors=true"
+        
+        echo "✅ Server app environment variables configured"
+
     - name: Restart Web Apps
       run: |
-        echo "🔄 Restarting web apps to apply new containers..."
+        echo "🔄 Restarting web apps to apply new configuration..."
         
         # Restart both apps in parallel for faster deployment
         az webapp restart \
@@ -266,7 +316,14 @@ jobs:
           echo "- **Server:** \`${{ needs.prepare-deployment.outputs.server_image }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔧 Environment Variables" >> $GITHUB_STEP_SUMMARY
-          echo "Application settings and environment variables are preserved from previous configuration." >> $GITHUB_STEP_SUMMARY
+          echo "**Configured automatically during deployment:**" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Identity Server configuration (OAuth settings)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ MCP Server URLs (cross-app communication)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ External API endpoints (AmLink services)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ ASP.NET Core environment settings" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**⚠️ Manual configuration needed:**" >> $GITHUB_STEP_SUMMARY
+          echo "- OPENAI_API_KEY: Set this in Azure Portal for both apps" >> $GITHUB_STEP_SUMMARY
         else
           echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
