@@ -19,11 +19,13 @@ switch ($Environment) {
         $ResourceGroup = "rg-amlink-submissions-mcp-staging"
         $ClientAppName = "app-amlink-submissions-mcp-staging-client"
         $ServerAppName = "app-amlink-submissions-mcp-staging-server"
+        $Location = "eastus2"
     }
     "production" {
         $ResourceGroup = "rg-amlink-submissions-mcp-prod"
         $ClientAppName = "app-amlink-submissions-mcp-prod-client"
         $ServerAppName = "app-amlink-submissions-mcp-prod-server"
+        $Location = "eastus2"
     }
 }
 

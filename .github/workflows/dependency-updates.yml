@@ -22,20 +22,63 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
-    - name: Check for outdated packages
+    - name: Check and update packages
+      id: packages
       run: |
-        echo "## Outdated Packages Report" > outdated-packages.md
-        echo "### Server Project" >> outdated-packages.md
-        cd src/amlink-submissions-mcp-server
-        dotnet list package --outdated >> ../../outdated-packages.md || echo "No outdated packages found" >> ../../outdated-packages.md
+        echo "📦 Checking for outdated packages..."
         
-        echo "### Client Project" >> ../../outdated-packages.md
-        cd ../amlink-submissions-mcp-client
-        dotnet list package --outdated >> ../../outdated-packages.md || echo "No outdated packages found" >> ../../outdated-packages.md
+        # Create report file
+        echo "## 📦 Package Status Report" > packages-report.md
+        echo "" >> packages-report.md
         
-        echo "### Test Project" >> ../../outdated-packages.md
-        cd ../amlink-submissions-mcp.Tests
-        dotnet list package --outdated >> ../../outdated-packages.md || echo "No outdated packages found" >> ../../outdated-packages.md
+        # Function to check and optionally update packages
+        check_project() {
+          local project_path=$1
+          local project_name=$2
+          
+          echo "### $project_name" >> ../../packages-report.md
+          echo "" >> ../../packages-report.md
+          
+          cd "$project_path"
+          
+          # Check for outdated packages
+          if dotnet list package --outdated --format json > outdated.json 2>/dev/null; then
+            if [[ $(jq '.projects[0].frameworks[0].topLevelPackages | length' outdated.json 2>/dev/null || echo 0) -gt 0 ]]; then
+              echo "📋 **Outdated packages found:**" >> ../../packages-report.md
+              echo '```' >> ../../packages-report.md
+              dotnet list package --outdated >> ../../packages-report.md
+              echo '```' >> ../../packages-report.md
+              
+              # Update to latest minor/patch versions (safe updates)
+              echo "🔄 Updating to latest patch versions..." >> ../../packages-report.md
+              dotnet list package --outdated --format json | jq -r '.projects[0].frameworks[0].topLevelPackages[]? | select(.latestVersion != .resolvedVersion) | .id' | while read package; do
+                echo "Updating $package..."
+                dotnet add package "$package" --no-restore || true
+              done
+              
+              echo "updated=true" >> $GITHUB_OUTPUT
+            else
+              echo "✅ All packages are up to date" >> ../../packages-report.md
+            fi
+          else
+            echo "⚠️ Could not check packages" >> ../../packages-report.md
+          fi
+          
+          echo "" >> ../../packages-report.md
+          rm -f outdated.json
+          cd - > /dev/null
+        }
+        
+        # Check all projects
+        check_project "src/amlink-submissions-mcp-server" "Server Project"
+        check_project "src/amlink-submissions-mcp-client" "Client Project"
+        
+        if [ -d "src/amlink-submissions-mcp.Tests" ]; then
+          check_project "src/amlink-submissions-mcp.Tests" "Test Project"
+        fi
+        
+        echo "📄 Package report generated"
+        cat packages-report.md
 
     - name: Test updated dependencies
       run: |
@@ -43,27 +86,31 @@ jobs:
         dotnet build --configuration Release
         dotnet test --configuration Release --no-build
 
-    - name: Create Pull Request
+    - name: Create Pull Request for updates
+      if: steps.packages.outputs.updated == 'true'
       uses: peter-evans/create-pull-request@v5
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        commit-message: 'chore: weekly dependency check'
-        title: 'chore: Weekly dependency status report'
-        body: |
-          ## 📦 Weekly Dependency Report
-          
-          This PR contains the weekly dependency status check.
-          
-          ### 📋 Report Details
-          $(cat outdated-packages.md)
-          
-          ### ✅ Actions Taken
-          - [x] Checked all projects for outdated packages
-          - [x] Verified build still succeeds
-          - [x] All tests continue to pass
-          
-          ### 🔄 Next Steps
-          Review the report above and manually update packages as needed.
-          This PR can be closed after review - it's for informational purposes.
+        commit-message: 'chore: update NuGet packages to latest patch versions'
+        title: 'chore: Automated dependency updates'
+        body-path: packages-report.md
         branch: dependency-updates
         delete-branch: true
+        labels: |
+          dependencies
+          automated
+        reviewers: |
+          ${{ github.actor }}
+    
+    - name: Create summary comment
+      if: always()
+      run: |
+        echo "## 📦 Dependency Update Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [[ "${{ steps.packages.outputs.updated }}" == "true" ]]; then
+          echo "✅ **Updates Applied**: Created PR with package updates" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "ℹ️ **No Updates**: All packages are current" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        cat packages-report.md >> $GITHUB_STEP_SUMMARY

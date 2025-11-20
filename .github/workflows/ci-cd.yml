@@ -68,6 +68,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Security Scan
     needs: test
+    permissions:
+      security-events: write
+      contents: read
     
     steps:
     - name: Checkout code
@@ -80,12 +83,29 @@ jobs:
         scan-ref: '.'
         format: 'sarif'
         output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+
+    - name: Run Trivy config scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'config'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-config-results.sarif'
 
     - name: Upload Trivy scan results
       uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'
+        category: 'filesystem'
+
+    - name: Upload Trivy config scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-config-results.sarif'
+        category: 'configuration'
 
   docker-build:
     runs-on: ubuntu-latest
