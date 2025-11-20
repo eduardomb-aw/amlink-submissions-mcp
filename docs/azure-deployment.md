@@ -1,6 +1,15 @@
-# Azure Container Apps Deployment Guide
+# Azure Web Apps Deployment Guide
 
-This guide walks through setting up automated deployment to Azure Container Apps for the AmLink Submissions MCP project.
+This guide walks through the automated deployment to Azure Web Apps for Containers for the AmLink Submissions MCP project.
+
+## 🎯 Current Deployment Architecture
+
+**Production Environment:**
+- **Resource Group**: `rg-amlink-submissions-mcp-staging`
+- **Client Web App**: `app-amlink-submissions-mcp-staging-client`
+- **Server Web App**: `app-amlink-submissions-mcp-staging-server`
+- **Deployment Method**: Automated via GitHub Actions
+- **Configuration**: Automatic environment variable setup
 
 ## 🎯 Architecture Overview
 
@@ -78,15 +87,21 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 
 ### **Staging Environment**
 - **Resource Group:** `rg-amlink-submissions-mcp-staging`
+- **Client Web App:** `app-amlink-submissions-mcp-staging-client`
+- **Server Web App:** `app-amlink-submissions-mcp-staging-server`
 - **Purpose:** Testing and validation
-- **Auto-deploy:** Pre-release versions (v1.0.0-beta)
-- **URL Pattern:** `https://ca-amlink-submissions-mcp-staging-client.xxx.azurecontainerapps.io`
+- **Auto-deploy:** Manual trigger or releases
+- **Client URL:** `https://app-amlink-submissions-mcp-staging-client.azurewebsites.net`
+- **Server URL:** `https://app-amlink-submissions-mcp-staging-server.azurewebsites.net`
 
 ### **Production Environment**  
 - **Resource Group:** `rg-amlink-submissions-mcp-prod`
+- **Client Web App:** `app-amlink-submissions-mcp-prod-client`
+- **Server Web App:** `app-amlink-submissions-mcp-prod-server`
 - **Purpose:** Live production workloads
 - **Auto-deploy:** Stable releases (v1.0.0)
-- **URL Pattern:** `https://ca-amlink-submissions-mcp-prod-client.xxx.azurecontainerapps.io`
+- **Client URL:** `https://app-amlink-submissions-mcp-prod-client.azurewebsites.net`
+- **Server URL:** `https://app-amlink-submissions-mcp-prod-server.azurewebsites.net`
 
 ## 🔧 Infrastructure Components
 

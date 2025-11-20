@@ -108,6 +108,7 @@ The optimized deployment process now follows this sequence:
 
 - [GitHub Secrets Setup](./github-secrets-setup.md) - Authentication configuration
 - [Azure Deployment Guide](./azure-deployment.md) - Deployment procedures
+- [Deployment Configuration](./deployment-configuration.md) - **NEW: Automatic environment variable setup**
 - [Deployment Workflows](./deployment-workflows.md) - Workflow documentation
 
 ## 📝 Change Log

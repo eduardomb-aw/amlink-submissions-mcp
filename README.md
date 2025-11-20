@@ -104,11 +104,18 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `IDENTITY_SERVER_CLIENT_SECRET` | OAuth client secret | Required |
-| `OPENAI_API_KEY` | OpenAI API key for LLM integration | Required |
-| `ASPNETCORE_ENVIRONMENT` | Runtime environment | Development |
+**Automatically Configured in Azure (via deployment pipeline):**
+- `IdentityServer__*` - OAuth 2.0/OpenID Connect settings
+- `McpServer__*` - MCP server URLs and configuration
+- `ExternalApis__*` - AmLink API endpoints and settings
+- `ASPNETCORE_*` - ASP.NET Core runtime settings
+
+**Manual Configuration Required:**
+
+| Variable | Description | Location |
+|----------|-------------|----------|
+| `OPENAI_API_KEY` | OpenAI API key for LLM integration | Azure Portal (both apps) |
+| `IDENTITY_SERVER_CLIENT_SECRET` | OAuth client secret (if needed) | Azure Portal (optional) |
 
 ### Docker Compose Configurations
 
@@ -116,12 +123,34 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 - **Override** (`docker-compose.override.yml`): Development settings with hot reload
 - **Production** (`docker-compose.prod.yml`): Enhanced production features (health checks, resource limits)
 
+## ⚙️ Deployment Configuration
+
+### Automatic Environment Setup
+
+The deployment pipeline automatically configures:
+
+**Client Application:**
+- Identity Server OAuth settings (client ID, scopes, redirect URIs)
+- MCP server communication URLs
+- Cross-app authentication configuration
+
+**Server Application:**
+- Identity Server authentication settings
+- External API endpoints (AmLink Submission API)
+- MCP server documentation URLs
+- OAuth callback and response handling
+
+**Manual Setup (Sensitive Data):**
+- `OPENAI_API_KEY`: Set in Azure Portal → Web App → Configuration
+- Optional OAuth secrets: Configure if custom authentication is needed
+
 ## 🔒 Security
 
 - **HTTPS Support**: Self-signed certificates for development, configurable for production
 - **OAuth 2.0**: Identity Server 4 integration for secure API access
 - **Environment Isolation**: Separate configurations for development and production
 - **Secret Management**: Environment variable-based configuration
+- **Automatic Configuration**: Sensitive settings configured via deployment pipeline
 
 ## 🛠️ Development
 
