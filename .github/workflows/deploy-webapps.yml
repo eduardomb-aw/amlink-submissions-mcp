@@ -172,6 +172,7 @@ jobs:
           --settings \
             "IdentityServer__Url=https://identitydev.amwins.com" \
             "IdentityServer__ClientId=al-mcp-client" \
+            "IdentityServer__ClientSecret=${{ secrets.IDENTITY_SERVER_CLIENT_SECRET }}" \
             "IdentityServer__ServerClientId=al-mcp-client" \
             "IdentityServer__GrantType=authorization_code" \
             "IdentityServer__Scopes=amlink-maintenance-api amlink-submission-api amlink-policy-api amlink-doc-api amwins-graphadapter-api" \
@@ -196,6 +197,7 @@ jobs:
           --settings \
             "IdentityServer__Url=https://identitydev.amwins.com" \
             "IdentityServer__ClientId=al-mcp-client" \
+            "IdentityServer__ClientSecret=${{ secrets.IDENTITY_SERVER_CLIENT_SECRET }}" \
             "IdentityServer__GrantType=authorization_code" \
             "IdentityServer__Scopes=amlink-maintenance-api amlink-submission-api amlink-policy-api amlink-doc-api amwins-graphadapter-api" \
             "IdentityServer__RedirectUri=${CLIENT_URL}/callback" \

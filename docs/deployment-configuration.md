@@ -107,8 +107,7 @@ The following variables must be set manually in the Azure Portal for security re
 **Both Applications:**
 - `OPENAI_API_KEY`: Your OpenAI API key for LLM integration
 
-**Optional (if needed):**
-- `IDENTITY_SERVER_CLIENT_SECRET`: OAuth client secret
+**Note:** `IDENTITY_SERVER_CLIENT_SECRET` is now automatically configured from GitHub secrets during deployment.
 
 ### **How to Set Manual Variables**
 
