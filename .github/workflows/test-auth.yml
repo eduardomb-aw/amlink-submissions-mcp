@@ -33,4 +33,5 @@ jobs:
     - name: Verify login action
       run: |
         echo "Testing Azure login action..."
+        az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
         az account show --output table || echo "❌ Login action failed"
