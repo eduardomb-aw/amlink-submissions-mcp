@@ -67,6 +67,141 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 - Use xUnit test framework
 - Run with: `dotnet test --verbosity normal`
 
+## Test-Driven Development (TDD) Guidelines
+
+### TDD Philosophy
+This project follows strict Test-Driven Development practices with a clear RED-GREEN-REFACTOR cycle. Tests describe IDEAL behavior first, then implementation follows.
+
+### TDD Process
+1. **RED Phase**: Write failing tests that describe desired behavior (tests fail in PR, never in main)
+2. **GREEN Phase**: Implement minimal code to make tests pass
+3. **REFACTOR Phase**: Clean up code while keeping tests green
+4. **MERGE**: All tests must pass before merging to main
+
+### TDD Workflow Strategy
+- **Feature Branches**: Create failing tests that will fail PR validation
+- **Implementation**: Fix the failing tests through implementation and refactoring
+- **Main Branch Protection**: Never merge failing tests into main branch
+- **PR Validation**: Use failing tests as a forcing function for complete implementation
+
+### Test Organization
+
+#### RED Phase Tests (Active Failing Tests)
+- Write tests WITHOUT `Skip` attribute - let them fail in PR validation
+- Failing tests serve as a TODO list and prevent incomplete merges
+- Focus on edge cases, error conditions, and expected behaviors
+- Example pattern:
+```csharp
+[Fact] // No Skip - this WILL fail until implemented
+public async Task GetSubmission_WithNullSubmissionId_ShouldThrowArgumentNullException()
+{
+    // Arrange - describe the scenario
+    string? submissionId = null;
+
+    // Act & Assert - define expected behavior
+    var exception = await Assert.ThrowsAsync<ArgumentNullException>(
+        () => _submissionApiTools.GetSubmission(submissionId!));
+
+    Assert.Equal("submissionId", exception.ParamName);
+}
+```
+
+#### GREEN Phase Tests (Implementation Complete)
+- All tests pass and PR validation succeeds
+- Implementation satisfies all test requirements
+- Code is refactored and clean while maintaining green tests
+
+### Test Categories
+
+#### Parameter Validation Tests
+- Always test null, empty, and whitespace inputs
+- Verify proper exception types and messages
+- Test parameter validation BEFORE any HTTP calls or heavy operations
+
+#### HTTP Integration Tests
+- Mock `HttpMessageHandler` for external API calls
+- Test request formation (method, URL, headers, body)
+- Test various HTTP response scenarios (success, errors, timeouts)
+- Validate proper error handling and exception types
+
+#### JSON Processing Tests
+- Test valid JSON responses
+- Test invalid JSON handling
+- Test edge cases like empty responses or unexpected formats
+
+#### Security Tests
+- Verify proper authorization header handling
+- Test token validation and scope requirements
+- Test unauthorized access scenarios
+
+### Test Structure Standards
+
+#### Arrange-Act-Assert Pattern
+```csharp
+[Fact]
+public async Task MethodName_Scenario_ExpectedBehavior()
+{
+    // Arrange - Set up test data and mocks
+    var input = "test-value";
+    var expectedResult = "expected-output";
+    
+    // Act - Execute the method under test
+    var result = await _service.Method(input);
+    
+    // Assert - Verify the behavior
+    Assert.Equal(expectedResult, result);
+}
+```
+
+#### Mock Setup Patterns
+- Use `Mock<T>` for dependencies
+- Set up mocks in constructor for reusability
+- Use `Mock.Protected()` for `HttpMessageHandler` testing
+- Capture requests with callbacks for verification
+
+### TDD Best Practices
+
+#### Test Naming
+- Use descriptive names: `MethodName_Scenario_ExpectedBehavior`
+- Be specific about the test scenario
+- Make expectations clear in the name
+
+#### Test Coverage Requirements
+- **Parameter Validation**: All public methods must validate inputs
+- **Error Handling**: Test all possible error conditions
+- **Happy Path**: Test successful execution scenarios
+- **Edge Cases**: Test boundary conditions and unusual inputs
+
+#### Implementation Guidelines
+- Start with simplest failing test
+- Write minimal code to make test pass
+- Add complexity only when tests require it
+- Never write production code without a failing test
+
+### TDD Workflow for New Features
+
+1. **Create Feature Branch**: Start from main branch
+2. **Analyze Requirements**: Understand what the feature should do
+3. **Write Failing Tests**: Create comprehensive test suite that WILL fail PR validation
+4. **Commit Failing Tests**: Push to feature branch - PR validation will fail (expected)
+5. **Implement Code**: Write minimal code to make tests pass
+6. **Refactor**: Improve code quality while keeping tests green
+7. **Validate**: Ensure all tests pass and PR validation succeeds
+8. **Merge**: Only merge when all tests pass - main branch stays clean
+
+### Branch Protection Strategy
+- **Main Branch**: Always has passing tests - never merge failing tests
+- **Feature Branches**: Can have failing tests during development
+- **PR Validation**: Failing tests block merge until implementation is complete
+- **Forcing Function**: Failing tests in PR ensure complete implementation before merge
+
+### TDD Anti-Patterns to Avoid
+- ❌ Writing tests after implementation
+- ❌ Making tests pass by changing the test instead of the code
+- ❌ Writing tests that don't actually test the intended behavior
+- ❌ Skipping edge cases or error conditions
+- ❌ Writing implementation code without a failing test
+
 ## Coding Standards
 
 ### General Guidelines
@@ -308,6 +443,74 @@ docker-compose down && docker-compose up -d
 - [ ] Port mappings don't conflict with host services
 - [ ] OAuth redirect URIs match Identity Server configuration exactly
 
+## Pull Request Workflow Troubleshooting
+
+### Common PR Validation Failures and Solutions
+
+#### Issue: "Behavior not supported, please either only include (VALIDATE=true) or exclude (VALIDATE=false) linters"
+**Solution**: Simplify Super-Linter configuration by removing conflicting validation settings. Use only positive validation flags.
+
+#### Issue: "Option '--results-directory' expects a single argument but 2 were provided"
+**Solution**: Use `--results-directory` only once in dotnet test commands. Separate coverage and test results handling.
+
+#### Issue: "docker-compose: command not found"
+**Solution**: Replace `docker-compose` with `docker compose` (space instead of hyphen) in workflow files.
+
+#### Issue: "No such file or directory" for test results publishing
+**Solution**: Use specific filenames (`test-results.trx`) instead of glob patterns (`*.trx`) for more reliable artifact detection.
+
+#### Issue: "required variable IDENTITY_SERVER_CLIENT_SECRET is missing a value"
+**Solution**: Docker Compose validation fails when required environment variables aren't set. Provide dummy values for validation:
+```yaml
+- name: Validate Docker Compose
+  env:
+    IDENTITY_SERVER_CLIENT_SECRET: "validation-dummy-secret"
+    OPENAI_API_KEY: "validation-dummy-key"
+  run: |
+    docker compose -f docker-compose.yml config
+```
+
+#### Issue: "Fix whitespace formatting" or "Process completed with exit code 2" in code formatting step
+**Solution**: Code formatting violations detected by `dotnet format --verify-no-changes`. Fix formatting and commit:
+```bash
+# Fix all formatting issues automatically
+dotnet format
+
+# Check what files were changed
+git status
+
+# Add and commit the formatted files
+git add [formatted-files]
+git commit -m "Fix code formatting issues"
+git push
+```
+**Common causes**: Mixed tabs/spaces, incorrect indentation, trailing whitespace, inconsistent line endings. Always run `dotnet format` locally before pushing changes.
+
+### PR Merge Conflict Resolution Workflow
+1. **Switch to feature branch**: `git checkout feature-branch`
+2. **Fetch latest changes**: `git fetch origin`
+3. **Merge main branch**: `git merge origin/main`
+4. **Resolve conflicts** by editing conflicted files
+5. **Add resolved files**: `git add [conflicted-files]`
+6. **Complete merge**: `git commit -m "Resolve merge conflicts in [description]"`
+7. **Push changes**: `git push`
+8. **Monitor new workflow runs**: `gh run list --limit 3`
+
+### Quick Diagnostic Commands
+```bash
+# Check recent workflow runs
+gh run list --repo owner/repo --limit 5
+
+# View failed run details
+gh run view [run-id] --log-failed --repo owner/repo
+
+# Re-run failed workflow
+gh run rerun [run-id] --repo owner/repo
+
+# Check PR status
+gh pr view [pr-number] --repo owner/repo
+```
+
 ## Branch Protection Rules
 
 The main branch is protected with the following requirements:
@@ -326,11 +529,14 @@ The main branch is protected with the following requirements:
 
 ### Branch Protection Configuration
 ```bash
+# Replace OWNER/REPO with your repository path (e.g., eduardomb-aw/amlink-submissions-mcp)
+
 # View current protection rules
-gh api repos/eduardomb-aw/amlink-submissions-mcp/branches/main/protection
+gh api repos/OWNER/REPO/branches/main/protection
 
 # Update protection rules (use with caution)
-gh api repos/eduardomb-aw/amlink-submissions-mcp/branches/main/protection -X PUT --input protection.json
+# Replace OWNER/REPO with your repository path
+gh api repos/OWNER/REPO/branches/main/protection -X PUT --input protection.json
 ```
 
 ## Best Practices
