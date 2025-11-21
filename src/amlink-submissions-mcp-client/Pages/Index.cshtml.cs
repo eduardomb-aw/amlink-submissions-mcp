@@ -11,7 +11,7 @@ public partial class IndexModel : PageModel
     private readonly ITokenService _tokenService;
     private readonly IMcpService _mcpService;
     private readonly ILogger<IndexModel> _logger;
-    
+
     public string? ErrorMessage { get; set; }
     public string? AuthUrl { get; set; }
     public string? SuccessMessage { get; set; }
@@ -19,7 +19,7 @@ public partial class IndexModel : PageModel
     public bool IsConnected { get; set; }
     public List<McpClientTool>? AvailableTools { get; set; }
     public string? ToolResult { get; set; }
-    
+
     public IndexModel(
         ITokenService tokenService,
         IMcpService mcpService,
@@ -33,11 +33,11 @@ public partial class IndexModel : PageModel
     public async Task OnGetAsync()
     {
         _logger.LogInformation("Index page loaded. Authentication status: {IsAuthenticated}", IsAuthenticated);
-        
+
         // Handle messages from redirects (TempData)
         SuccessMessage = TempData["SuccessMessage"] as string;
         ErrorMessage = TempData["ErrorMessage"] as string;
-        
+
         // If already authenticated, try to get tools automatically
         if (IsAuthenticated)
         {
@@ -97,7 +97,7 @@ public partial class IndexModel : PageModel
             AvailableTools = await _mcpService.GetAvailableToolsAsync();
             IsConnected = true;
             SuccessMessage = $"Successfully connected to MCP server! Found {AvailableTools.Count} available tools.";
-            
+
             return Page();
         }
         catch (UnauthorizedAccessException)
@@ -132,15 +132,15 @@ public partial class IndexModel : PageModel
             }
 
             _logger.LogInformation("Invoking tool: {ToolName} with parameters: {Parameters}", toolName, parameters);
-            
+
             var parametersObj = System.Text.Json.JsonSerializer.Deserialize<IReadOnlyDictionary<string, object?>>(parameters);
             ToolResult = await _mcpService.InvokeToolAsync(toolName, parametersObj);
-            
+
             SuccessMessage = $"Tool '{toolName}' executed successfully.";
-            
+
             // Refresh the page to show current state
             await OnGetAsync();
-            
+
             return Page();
         }
         catch (UnauthorizedAccessException)

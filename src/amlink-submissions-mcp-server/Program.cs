@@ -22,7 +22,7 @@ builder.Services.Configure<ExternalApisConfiguration>(
     builder.Configuration.GetSection(ExternalApisConfiguration.SectionName));
 
 // Configure authentication with proper Identity Server 4 settings
-ConfigureAuthentication(builder.Services, serverConfig!, idsConfig!, builder.Environment);    
+ConfigureAuthentication(builder.Services, serverConfig!, idsConfig!, builder.Environment);
 
 builder.Services.AddAuthorization();
 
@@ -36,9 +36,9 @@ builder.Services.AddHttpClient("SubmissionApi", client =>
 {
     client.BaseAddress = new Uri(externalApisConfig!.SubmissionApi.BaseUrl);
     client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(
-        externalApisConfig.SubmissionApi.UserAgent, 
+        externalApisConfig.SubmissionApi.UserAgent,
     externalApisConfig.SubmissionApi.Version));
-  // Note: Authorization header will be set per-request in the tool implementation
+    // Note: Authorization header will be set per-request in the tool implementation
 });
 
 var app = builder.Build();
