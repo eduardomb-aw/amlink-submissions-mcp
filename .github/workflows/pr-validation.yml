@@ -43,8 +43,12 @@ jobs:
           echo "Test projects found, running tests..."
           dotnet test --no-build --configuration Release \
             --collect:"XPlat Code Coverage" \
-            --results-directory ./coverage \
-            --logger trx --results-directory ./test-results
+            --results-directory ./test-results \
+            --logger "trx;LogFileName=test-results.trx"
+          # Move coverage files to separate directory
+          mkdir -p ./coverage
+          find ./test-results -name "*.coverage" -exec mv {} ./coverage/ \; 2>/dev/null || true
+          find ./test-results -name "coverage.cobertura.xml" -exec mv {} ./coverage/ \; 2>/dev/null || true
         else
           echo "No test projects found, skipping test reporting"
           mkdir -p ./test-results ./coverage
@@ -52,10 +56,10 @@ jobs:
 
     - name: Publish test results
       uses: dorny/test-reporter@v1
-      if: always() && hashFiles('./test-results/*.trx') != ''
+      if: always() && hashFiles('./test-results/test-results.trx') != ''
       with:
         name: .NET Tests
-        path: './test-results/*.trx'
+        path: './test-results/test-results.trx'
         reporter: dotnet-trx
 
     - name: Docker Build Test
@@ -85,9 +89,6 @@ jobs:
         VALIDATE_YAML: true
         VALIDATE_JSON: true
         VALIDATE_MARKDOWN: true
-        # Disable strict validation that might cause issues
-        VALIDATE_EDITORCONFIG: false
-        VALIDATE_NATURAL_LANGUAGE: false
         # Run only on changed files
         VALIDATE_ALL_CODEBASE: false
 
