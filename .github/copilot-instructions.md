@@ -332,6 +332,67 @@ Required environment variables (see `.env.example`):
 - Check Identity Server 4 configuration in both client and server
 - Ensure JWT Bearer tokens are correctly validated
 
+### GitHub Actions Workflow Issues
+
+#### .NET Version Compatibility
+- GitHub Actions runners may not immediately support the latest .NET versions
+- Use multi-version setup with fallback support:
+  ```yaml
+  - name: Setup .NET
+    uses: actions/setup-dotnet@v4
+    with:
+      dotnet-version: |
+        9.0.x
+        10.0.x
+  ```
+- When .NET 10.0 is unavailable, it falls back to 9.0.x for compatibility
+
+#### Docker Compose Commands
+- GitHub Actions uses modern Docker with `docker compose` (space) instead of `docker-compose` (hyphen)
+- Always use: `docker compose -f docker-compose.yml config`
+- Never use: `docker-compose -f docker-compose.yml config`
+
+#### Test Results Configuration
+- Use specific filenames for test results to ensure reliable artifact collection
+- Correct pattern: `--logger "trx;LogFileName=test-results.trx"`
+- Avoid duplicate `--results-directory` parameters in dotnet test commands
+- Structure test commands as:
+  ```bash
+  dotnet test --no-build --configuration Release \
+    --collect:"XPlat Code Coverage" \
+    --results-directory ./test-results \
+    --logger "trx;LogFileName=test-results.trx"
+  ```
+
+#### Super-Linter Configuration
+- Avoid mixing `VALIDATE_*: true` and `VALIDATE_*: false` settings
+- Either include only linters you want (all true) or exclude specific ones (all false)
+- Safe minimal configuration:
+  ```yaml
+  env:
+    DEFAULT_BRANCH: main
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    VALIDATE_DOCKERFILE_HADOLINT: true
+    VALIDATE_YAML: true
+    VALIDATE_JSON: true
+    VALIDATE_MARKDOWN: true
+    VALIDATE_ALL_CODEBASE: false
+  ```
+
+#### Merge Conflict Resolution
+- Always fetch latest changes before resolving conflicts: `git fetch origin`
+- Merge main into feature branch: `git merge origin/main`
+- Resolve conflicts by choosing appropriate sections (keep structural improvements)
+- Test workflow changes locally when possible before pushing
+- After resolving conflicts, commit with descriptive message: `git commit -m "Resolve merge conflicts in [file]"`
+
+#### Workflow Validation Best Practices
+- Test dotnet commands locally before committing workflow changes
+- Use `docker compose config` to validate compose files locally
+- Check workflow syntax with VS Code YAML extension before committing
+- Monitor workflow runs immediately after pushing changes
+- Use `gh run list` and `gh run view --log-failed` for quick diagnostics
+
 ## Docker Guidelines
 
 ### Critical Docker Rules
@@ -538,7 +599,6 @@ gh api repos/OWNER/REPO/branches/main/protection
 # Replace OWNER/REPO with your repository path
 gh api repos/OWNER/REPO/branches/main/protection -X PUT --input protection.json
 ```
-
 ## Best Practices
 
 1. **Minimal Changes**: Make the smallest possible changes to achieve the goal
