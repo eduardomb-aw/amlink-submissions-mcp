@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using ModelContextProtocol;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Text.Json;
 
@@ -14,6 +15,7 @@ public sealed class SubmissionApiTools
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<SubmissionApiTools> _logger;
     private readonly IdentityServerConfiguration _idsConfig;
     private readonly ExternalApisConfiguration _externalApisConfig;
 
@@ -24,12 +26,14 @@ public sealed class SubmissionApiTools
         IHttpClientFactory httpClientFactory,
         IHttpContextAccessor httpContextAccessor,
         IConfiguration configuration,
+        ILogger<SubmissionApiTools> logger,
         IOptions<IdentityServerConfiguration> idsOptions,
         IOptions<ExternalApisConfiguration> externalApisOptions)
     {
         _httpClientFactory = httpClientFactory;
         _httpContextAccessor = httpContextAccessor;
         _configuration = configuration;
+        _logger = logger;
         _idsConfig = idsOptions.Value;
         _externalApisConfig = externalApisOptions.Value;
     }
@@ -196,41 +200,44 @@ public sealed class SubmissionApiTools
 
     /// <summary>
     /// Checks if the current JWT token has the required scope.
-    /// This is a simplified implementation - in production you might want more robust token parsing.
+    /// Uses System.IdentityModel.Tokens.Jwt library for proper JWT validation.
     /// </summary>
     /// <param name="token">The JWT token to check.</param>
     /// <param name="requiredScope">The required scope.</param>
     /// <returns>True if the token has the required scope.</returns>
-    private static bool TokenHasRequiredScope(string token, string requiredScope)
+    private bool TokenHasRequiredScope(string token, string requiredScope)
     {
         try
         {
-            // Simple JWT parsing - in production, use a proper JWT library
-            var parts = token.Split('.');
-            if (parts.Length != 3) return false;
+            var handler = new JwtSecurityTokenHandler();
 
-            var payload = parts[1];
-            // Add padding if needed for base64 decoding
-            while (payload.Length % 4 != 0)
+            if (!handler.CanReadToken(token))
             {
-                payload += "=";
+                _logger.LogWarning("Invalid JWT token format");
+                return false;
             }
 
-            var payloadBytes = Convert.FromBase64String(payload);
-            var payloadJson = System.Text.Encoding.UTF8.GetString(payloadBytes);
+            var jwtToken = handler.ReadJwtToken(token);
 
-            using var document = JsonDocument.Parse(payloadJson);
-            if (document.RootElement.TryGetProperty("scope", out var scopeElement))
+            if (jwtToken.ValidTo < DateTime.UtcNow)
             {
-                var scopes = scopeElement.GetString()?.Split(' ') ?? Array.Empty<string>();
-                return scopes.Contains(requiredScope);
+                _logger.LogWarning("JWT token has expired");
+                return false;
             }
 
-            return false;
+            var scopeClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "scope");
+            if (scopeClaim == null)
+            {
+                _logger.LogWarning("JWT token does not contain scope claim");
+                return false;
+            }
+
+            var scopes = scopeClaim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            return scopes.Contains(requiredScope);
         }
-        catch
+        catch (Exception ex)
         {
-            // If token parsing fails, assume it doesn't have the required scope
+            _logger.LogError(ex, "Error validating JWT token for required scope");
             return false;
         }
     }
