@@ -206,8 +206,72 @@ This project includes GitHub Actions workflows for:
 ## 📝 API Documentation
 
 - **MCP Server Tools**: Available at `/tools` endpoint
-- **Health Checks**: Available at `/health` endpoint
+- **Health Checks**: Available at `/health`, `/health/ready`, `/health/live` endpoints
 - **OpenAPI/Swagger**: Available in development mode
+
+### Health Check Endpoints
+
+Both the server and client applications provide health check endpoints for monitoring and orchestration:
+
+#### `/health` - Comprehensive Health Status
+Returns detailed health information including all dependency checks:
+```json
+{
+  "status": "Healthy",
+  "checks": [
+    {
+      "name": "self",
+      "status": "Healthy",
+      "description": "Server is running",
+      "duration": 0.5
+    },
+    {
+      "name": "identity_server",
+      "status": "Healthy",
+      "description": null,
+      "duration": 125.3
+    },
+    {
+      "name": "submission_api",
+      "status": "Healthy",
+      "description": null,
+      "duration": 98.7
+    }
+  ],
+  "totalDuration": 224.5
+}
+```
+
+#### `/health/ready` - Readiness Probe
+Returns simple status indicating if the application is ready to accept traffic:
+```json
+{
+  "status": "Healthy"
+}
+```
+
+#### `/health/live` - Liveness Probe
+Returns simple status indicating if the application is running:
+```json
+{
+  "status": "Healthy"
+}
+```
+
+**Health Status Values:**
+- `Healthy` - All checks passed
+- `Degraded` - Some non-critical checks failed (e.g., external dependencies)
+- `Unhealthy` - Critical checks failed
+
+**Server Health Checks:**
+- Self check - Application is running
+- Identity Server - OAuth provider availability
+- Submission API - External API availability
+
+**Client Health Checks:**
+- Self check - Application is running
+- MCP Server - Backend server availability
+- Identity Server - OAuth provider availability
 
 ## 🤝 Contributing
 
