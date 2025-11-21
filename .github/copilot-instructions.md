@@ -197,6 +197,117 @@ Required environment variables (see `.env.example`):
 - Check Identity Server 4 configuration in both client and server
 - Ensure JWT Bearer tokens are correctly validated
 
+## Docker Guidelines
+
+### Critical Docker Rules
+1. **Environment Variable Validation**: Always double-check that all necessary environment variables are defined in containers and have correct values, regardless of being simple variables, local secrets, or remote secrets
+2. **Docker Compose Only**: Must always use Docker Compose to spin containers up or down - never use direct `docker run` commands
+3. **Minimal Compose Files**: Must always maintain a minimum number of Docker Compose files with clear purposes
+4. **Network Configuration**: Must always double-check that appropriate network configuration is in place for containers
+5. **Alphabetical Environment Variables**: Environment variables must always be defined in alphabetical order for consistency and maintainability
+
+### Required Environment Variables
+
+#### MCP Server
+- `ASPNETCORE_ENVIRONMENT` - Runtime environment (Development/Production)
+- `ASPNETCORE_URLS` - Binding URLs for the server (e.g., `http://+:80;https://+:443`)
+- `ASPNETCORE_Kestrel__Certificates__Default__Password` - SSL certificate password for HTTPS
+- `ASPNETCORE_Kestrel__Certificates__Default__Path` - Path to SSL certificate file
+- `ASPNETCORE_FORWARDEDHEADERS_ENABLED` - Enable forwarded headers (Production only)
+- `ASPNETCORE_HTTPS_PORT` - HTTPS port for redirects (Production: `8443`)
+- `Server__Url` - Internal server URL for container communication (e.g., `http://amlink-mcp-server:80`)
+- `Server__ResourceBaseUri` - Base URI for server resources (optional)
+- `Server__ResourceDocumentationUrl` - URL for API documentation (optional)
+- `McpServer__BrowserUrl` - External server URL for browser access (e.g., `http://localhost:7072`)
+- `IdentityServer__Url` - Identity Server base URL (e.g., `https://identitydev.amwins.com`)
+- `IdentityServer__ClientId` - OAuth client identifier (e.g., `al-mcp-client`)
+- `IdentityServer__ClientSecret` - OAuth client secret (REQUIRED - never use defaults)
+- `IdentityServer__GrantType` - OAuth grant type (typically `authorization_code`)
+- `IdentityServer__Scopes` - Required OAuth scopes (space-separated)
+- `ExternalApis__SubmissionApi__BaseUrl` - AmLink Submission API base URL
+- `ExternalApis__SubmissionApi__RequiredScope` - Required scope for submission API
+- `ExternalApis__SubmissionApi__UserAgent` - User agent for API calls
+- `ExternalApis__SubmissionApi__Version` - API version
+- `OPENAI_API_KEY` - OpenAI API key for LLM integration (REQUIRED)
+
+#### MCP Client
+- `ASPNETCORE_ENVIRONMENT` - Runtime environment (Development/Production)
+- `ASPNETCORE_URLS` - Binding URLs for the client (e.g., `http://+:80;https://+:443`)
+- `ASPNETCORE_Kestrel__Certificates__Default__Password` - SSL certificate password for HTTPS
+- `ASPNETCORE_Kestrel__Certificates__Default__Path` - Path to SSL certificate file
+- `ASPNETCORE_FORWARDEDHEADERS_ENABLED` - Enable forwarded headers (Production only)
+- `ASPNETCORE_HTTPS_PORT` - HTTPS port for redirects (Production: `5001`)
+- `McpServer__Url` - Internal MCP server URL (container-to-container, e.g., `http://amlink-mcp-server:80`)
+- `McpServer__BrowserUrl` - External MCP server URL (browser access, e.g., `http://localhost:8080`)
+- `McpServer__Name` - Display name for MCP server (optional)
+- `McpServer__TimeoutSeconds` - Timeout for MCP requests (default: 30)
+- `IdentityServer__Url` - Identity Server base URL (e.g., `https://identitydev.amwins.com`)
+- `IdentityServer__ClientId` - OAuth client identifier (e.g., `al-mcp-client`)
+- `IdentityServer__ServerClientId` - Server client identifier (typically same as ClientId)
+- `IdentityServer__ClientSecret` - OAuth client secret (REQUIRED - never use defaults)
+- `IdentityServer__GrantType` - OAuth grant type (typically `authorization_code`)
+- `IdentityServer__Scopes` - Required OAuth scopes (space-separated)
+- `IdentityServer__RedirectUri` - OAuth callback URL (MUST match Identity Server config exactly)
+- `IdentityServer__ResponseMode` - OAuth response mode (typically `query`)
+- `DataProtection__KeyRingPath` - Path for data protection keys (Production: `/tmp/dp-keys`)
+- `OPENAI_API_KEY` - OpenAI API key (REQUIRED)
+
+#### External Environment Variables (Host System)
+- `IDENTITY_SERVER_CLIENT_SECRET` - Set on host system, referenced in compose files
+- `OPENAI_API_KEY` - Set on host system, referenced in compose files
+
+#### Registry Deployment Variables (.env.prod.example)
+- `CERT_PASSWORD` - Certificate password for production deployment
+- `CLIENT_ID` - Production OAuth client ID
+- `CLIENT_SECRET` - Production OAuth client secret
+- `SUBMISSION_API_URL` - Production AmLink Submission API URL
+- `SUBMISSION_API_KEY` - API key for submission service
+- `CLIENT_IMAGE_TAG` - Docker image tag for client (avoid 'latest' in production)
+- `SERVER_IMAGE_TAG` - Docker image tag for server (avoid 'latest' in production)
+- `REGISTRY` - Docker registry URL (e.g., `ghcr.io`)
+
+### Mandatory Docker Compose Commands
+
+#### Starting Services
+```bash
+# Development (uses override file automatically)
+docker-compose up -d
+
+# Production
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# With rebuild
+docker-compose up -d --build
+```
+
+#### Stopping Services
+```bash
+# Stop and remove containers
+docker-compose down
+
+# Clean restart
+docker-compose down && docker-compose up -d
+```
+
+### Docker Compose File Structure
+1. **`docker-compose.yml`** - Base production configuration (MANDATORY)
+2. **`docker-compose.override.yml`** - Development overrides (auto-loaded)
+3. **`docker-compose.prod.yml`** - Production-specific settings (optional)
+
+### Network Configuration Requirements
+- **Internal Communication**: Use service names (e.g., `http://amlink-mcp-server:80`)
+- **External Access**: Use localhost with mapped ports (e.g., `https://localhost:5001`)
+- **All services must be on the same Docker network**
+- **Verify DNS resolution between containers**
+
+### Pre-Deployment Validation Checklist
+- [ ] All required environment variables are defined with real values
+- [ ] Secret values are not using defaults or dummy data
+- [ ] `docker-compose config` passes without errors
+- [ ] Network allows required communication paths
+- [ ] Port mappings don't conflict with host services
+- [ ] OAuth redirect URIs match Identity Server configuration exactly
+
 ## Best Practices
 
 1. **Minimal Changes**: Make the smallest possible changes to achieve the goal

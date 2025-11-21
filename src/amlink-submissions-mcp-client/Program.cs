@@ -65,63 +65,38 @@ builder.Services.AddHttpClient("openai", client =>
     client.Timeout = TimeSpan.FromMinutes(2);
 });
 
-// Configure data protection for local development
-if (builder.Environment.IsDevelopment())
-{
-    // For local development, use simple data protection that persists keys
-    var keysPath = Path.Combine(builder.Environment.ContentRootPath, "temp-keys");
-    Directory.CreateDirectory(keysPath);
-    
-    builder.Services.AddDataProtection()
-        .SetApplicationName("amlink-mcp-client")
-        .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
-        .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
-}
-else
-{
-    // Configure data protection for containers with persistent key storage
-    var keyRingPath = builder.Configuration.GetValue<string>("DataProtection:KeyRingPath") ?? "/tmp/dp-keys";
-    
-    builder.Services.AddDataProtection()
-        .SetApplicationName("amlink-mcp-client")
-        .PersistKeysToFileSystem(new DirectoryInfo(keyRingPath))
-        .SetDefaultKeyLifetime(TimeSpan.FromDays(90)); // Longer lifetime for stability
-    
-    // Ensure the key ring directory exists
-    Directory.CreateDirectory(keyRingPath);
-    Console.WriteLine($"Data protection keys will be stored in: {keyRingPath}");
-}
+// Configure data protection with consistent behavior
+// Use the Docker volume path that matches docker-compose.yml
+var keyRingPath = builder.Configuration.GetValue<string>("DataProtection:KeyRingPath") ?? "/root/.aspnet/DataProtection-Keys";
+
+// Ensure the key ring directory exists
+Directory.CreateDirectory(keyRingPath);
+Console.WriteLine($"Data protection keys will be stored in: {keyRingPath}");
+
+builder.Services.AddDataProtection()
+    .SetApplicationName("amlink-mcp-client")
+    .PersistKeysToFileSystem(new DirectoryInfo(keyRingPath))
+    .SetDefaultKeyLifetime(TimeSpan.FromDays(90)); // Longer lifetime for stability
 
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
-    // For local development, don't require HTTPS
-    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
-        ? CookieSecurePolicy.SameAsRequest 
-        : CookieSecurePolicy.Always;
+    options.Cookie.Name = "AmLinkMcpSession"; // Unique session cookie name
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // Consistent behavior
+    options.Cookie.SameSite = SameSiteMode.Lax; // More permissive for OAuth flows
 });
 
-// Configure antiforgery for different environments
+// Configure antiforgery with consistent behavior
 builder.Services.AddAntiforgery(options =>
 {
-    if (builder.Environment.IsDevelopment())
-    {
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-    }
-    else
-    {
-        // For containerized environments, use more lenient settings
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.Name = "__RequestVerificationToken";
-        options.Cookie.Expiration = TimeSpan.FromMinutes(20); // Shorter expiration to reduce stale token issues
-        options.Cookie.IsEssential = true;
-        // Suppress data protection warnings in containers
-        options.SuppressXFrameOptionsHeader = false;
-    }
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.Name = "__RequestVerificationToken";
+    options.Cookie.Expiration = TimeSpan.FromMinutes(20); // Shorter expiration to reduce stale token issues
+    options.Cookie.IsEssential = true;
+    options.SuppressXFrameOptionsHeader = false;
 });
 
 // Register services

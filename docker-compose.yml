@@ -11,12 +11,20 @@ services:
       - "8443:443"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:80;https://+:443
       - ASPNETCORE_Kestrel__Certificates__Default__Password=YourSecurePassword123!
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
-      - Server__Url=http://amlink-mcp-server:80
+      - ASPNETCORE_URLS=http://+:80;https://+:443
+      - ExternalApis__SubmissionApi__BaseUrl=https://amlink-submission-api-dev.amwins.net/v1/
+      - ExternalApis__SubmissionApi__RequiredScope=amlink-submission-api
+      - ExternalApis__SubmissionApi__UserAgent=mcp-submission-client
+      - ExternalApis__SubmissionApi__Version=1.0
+      - IdentityServer__ClientId=al-mcp-client
       - IdentityServer__ClientSecret=${IDENTITY_SERVER_CLIENT_SECRET:?IDENTITY_SERVER_CLIENT_SECRET is required}
+      - IdentityServer__GrantType=authorization_code
+      - IdentityServer__Scopes=amlink-maintenance-api amlink-submission-api amlink-policy-api amlink-doc-api amwins-graphadapter-api
+      - IdentityServer__Url=https://identitydev.amwins.com
       - OPENAI_API_KEY=${OPENAI_API_KEY:?OPENAI_API_KEY is required}
+      - Server__Url=http://amlink-mcp-server:80
     volumes:
       - dataprotection-keys:/root/.aspnet/DataProtection-Keys
       - ~/.aspnet/https:/https:ro
@@ -34,14 +42,19 @@ services:
       - "5001:443"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:80;https://+:443
       - ASPNETCORE_Kestrel__Certificates__Default__Password=YourSecurePassword123!
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
-      - McpServer__Url=http://amlink-mcp-server:80
-      - McpServer__BrowserUrl=https://localhost:8443
-      - IdentityServer__RedirectUri=https://localhost:5001/oauth/callback
+      - ASPNETCORE_URLS=http://+:80;https://+:443
+      - IdentityServer__ClientId=al-mcp-client
       - IdentityServer__ClientSecret=${IDENTITY_SERVER_CLIENT_SECRET:?IDENTITY_SERVER_CLIENT_SECRET is required}
       - IdentityServer__GrantType=authorization_code
+      - IdentityServer__RedirectUri=https://localhost:5001/oauth/callback
+      - IdentityServer__ResponseMode=query
+      - IdentityServer__Scopes=amlink-maintenance-api amlink-submission-api amlink-policy-api amlink-doc-api amwins-graphadapter-api
+      - IdentityServer__ServerClientId=al-mcp-client
+      - IdentityServer__Url=https://identitydev.amwins.com
+      - McpServer__BrowserUrl=https://localhost:8443
+      - McpServer__Url=http://amlink-mcp-server:80
       - OPENAI_API_KEY=${OPENAI_API_KEY:?OPENAI_API_KEY is required}
     volumes:
       - dataprotection-keys:/root/.aspnet/DataProtection-Keys
