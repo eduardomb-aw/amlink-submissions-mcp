@@ -57,8 +57,9 @@ builder.Services.AddRazorPages();
 builder.Services.AddHttpClient(); // Add HTTP client factory
 
 // Configure health checks
+const string SelfHealthCheckDescription = "Application is running";
 builder.Services.AddHealthChecks()
-    .AddCheck("self", () => HealthCheckResult.Healthy("Client is running"))
+    .AddCheck("self", () => HealthCheckResult.Healthy(SelfHealthCheckDescription))
     .AddUrlGroup(
         new Uri($"{mcpConfig.Url}/health"),
         name: "mcp_server",

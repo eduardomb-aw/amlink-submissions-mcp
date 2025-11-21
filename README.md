@@ -222,7 +222,7 @@ Returns detailed health information including all dependency checks:
     {
       "name": "self",
       "status": "Healthy",
-      "description": "Server is running",
+      "description": "Application is running",
       "duration": 0.5
     },
     {

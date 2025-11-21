@@ -30,8 +30,9 @@ ConfigureAuthentication(builder.Services, serverConfig!, idsConfig!, builder.Env
 builder.Services.AddAuthorization();
 
 // Configure health checks
+const string SelfHealthCheckDescription = "Application is running";
 builder.Services.AddHealthChecks()
-    .AddCheck("self", () => HealthCheckResult.Healthy("Server is running"))
+    .AddCheck("self", () => HealthCheckResult.Healthy(SelfHealthCheckDescription))
     .AddUrlGroup(
         new Uri($"{idsConfig!.Url}/.well-known/openid-configuration"),
         name: "identity_server",
