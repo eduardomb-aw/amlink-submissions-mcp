@@ -69,8 +69,8 @@ jobs:
 
     - name: Validate Docker Compose
       run: |
-        docker-compose -f docker-compose.yml config
-        docker-compose -f docker-compose.yml -f docker-compose.prod.yml config
+        docker compose -f docker-compose.yml config
+        docker compose -f docker-compose.yml -f docker-compose.prod.yml config
 
   lint:
     runs-on: ubuntu-latest
