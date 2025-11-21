@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using ModelContextProtocol;
 using Moq;
 using Moq.Protected;
 using Xunit;
@@ -76,7 +77,8 @@ public class SubmissionApiToolsTests
         var mockRequest = new Mock<HttpRequest>();
         var mockHeaders = new Mock<IHeaderDictionary>();
 
-        mockHeaders.Setup(h => h["Authorization"]).Returns("Bearer test-token");
+        // Mock the Authorization header properly for ASP.NET Core
+        mockHeaders.Setup(h => h.Authorization).Returns(new Microsoft.Extensions.Primitives.StringValues("Bearer test-token"));
         mockRequest.Setup(r => r.Headers).Returns(mockHeaders.Object);
         mockHttpContext.Setup(c => c.Request).Returns(mockRequest.Object);
         _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(mockHttpContext.Object);
@@ -93,39 +95,40 @@ public class SubmissionApiToolsTests
         );
     }
 
-    [Fact(Skip = "TDD RED phase - implementation pending")]
-    public async Task GetSubmission_WithNullSubmissionId_ShouldThrowArgumentNullException()
+    [Fact]
+    public async Task GetSubmission_WithZeroSubmissionId_ShouldThrowArgumentException()
     {
-        // Arrange - null submission ID
-        string? submissionId = null;
+        // Arrange - zero submission ID
+        long submissionId = 0;
 
         // Act & Assert - Should validate parameters BEFORE making HTTP calls
-        var exception = await Assert.ThrowsAsync<ArgumentNullException>(
-            () => _submissionApiTools.GetSubmission(submissionId!));
-
-        Assert.Equal("submissionId", exception.ParamName);
-    }
-
-    [Theory(Skip = "TDD RED phase - implementation pending")]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData("\t")]
-    public async Task GetSubmission_WithWhitespaceSubmissionId_ShouldThrowArgumentException(string submissionId)
-    {
-        // Act & Assert - Should validate empty/whitespace parameters
         var exception = await Assert.ThrowsAsync<ArgumentException>(
             () => _submissionApiTools.GetSubmission(submissionId));
 
         Assert.Equal("submissionId", exception.ParamName);
-        Assert.Contains("cannot be empty or whitespace", exception.Message);
+        Assert.Contains("must be a positive integer", exception.Message);
     }
 
-    [Fact(Skip = "TDD RED phase - implementation pending")]
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    [InlineData(long.MinValue)]
+    public async Task GetSubmission_WithNegativeSubmissionId_ShouldThrowArgumentException(long submissionId)
+    {
+        // Act & Assert - Should validate negative parameters
+        var exception = await Assert.ThrowsAsync<ArgumentException>(
+            () => _submissionApiTools.GetSubmission(submissionId));
+
+        Assert.Equal("submissionId", exception.ParamName);
+        Assert.Contains("must be a positive integer", exception.Message);
+    }
+
+    [Fact]
     public async Task GetSubmission_WithValidId_ShouldReturnCleanJsonObject()
     {
         // Arrange
-        var submissionId = "12345";
-        var expectedJsonResponse = """{"id": "12345", "status": "active", "submitter": "test@example.com"}""";
+        var submissionId = 12345L;
+        var expectedJsonResponse = """{"id": 12345, "status": "active", "submitter": "test@example.com"}""";
 
         var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -145,12 +148,12 @@ public class SubmissionApiToolsTests
 
         // Assert - Should return clean JSON, not wrapped in "Submission Details:" text
         var parsedResult = JsonSerializer.Deserialize<JsonElement>(result);
-        Assert.Equal("12345", parsedResult.GetProperty("id").GetString());
+        Assert.Equal(12345, parsedResult.GetProperty("id").GetInt64());
         Assert.Equal("active", parsedResult.GetProperty("status").GetString());
         Assert.Equal("test@example.com", parsedResult.GetProperty("submitter").GetString());
     }
 
-    [Theory(Skip = "TDD RED phase - implementation pending")]
+    [Theory]
     [InlineData(HttpStatusCode.NotFound)]
     [InlineData(HttpStatusCode.Unauthorized)]
     [InlineData(HttpStatusCode.Forbidden)]
@@ -159,7 +162,7 @@ public class SubmissionApiToolsTests
     public async Task GetSubmission_WhenApiReturnsError_ShouldThrowSpecificHttpException(HttpStatusCode statusCode)
     {
         // Arrange
-        var submissionId = "12345";
+        var submissionId = 12345L;
         var httpResponse = new HttpResponseMessage(statusCode)
         {
             Content = new StringContent("Error occurred", Encoding.UTF8, "text/plain")
@@ -180,12 +183,12 @@ public class SubmissionApiToolsTests
         Assert.Contains(statusCode.ToString(), exception.Message);
     }
 
-    [Fact(Skip = "TDD RED phase - implementation pending")]
+    [Fact]
     public async Task GetSubmission_WithValidId_ShouldMakeCorrectHttpRequest()
     {
         // Arrange
-        var submissionId = "12345";
-        var expectedJsonResponse = """{"id": "12345"}""";
+        var submissionId = 12345L;
+        var expectedJsonResponse = """{"id": 12345}""";
         HttpRequestMessage? capturedRequest = null;
 
         var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
@@ -213,11 +216,11 @@ public class SubmissionApiToolsTests
         Assert.Equal("test-client", capturedRequest.Headers.UserAgent.First().Product?.Name);
     }
 
-    [Fact(Skip = "TDD RED phase - implementation pending")]
+    [Fact]
     public async Task GetSubmission_WhenApiReturnsInvalidJson_ShouldThrowJsonException()
     {
         // Arrange
-        var submissionId = "12345";
+        var submissionId = 12345L;
         var invalidJsonResponse = "{ invalid json }";
 
         var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
@@ -238,11 +241,11 @@ public class SubmissionApiToolsTests
             () => _submissionApiTools.GetSubmission(submissionId));
     }
 
-    [Fact(Skip = "TDD RED phase - implementation pending")]
+    [Fact]
     public async Task GetSubmission_WhenNetworkTimeout_ThrowsTaskCanceledException()
     {
         // Arrange
-        var submissionId = "12345";
+        var submissionId = 12345L;
 
         _mockHttpHandler
             .Protected()
@@ -255,6 +258,155 @@ public class SubmissionApiToolsTests
         // Act & Assert - Should handle timeouts appropriately
         await Assert.ThrowsAsync<TaskCanceledException>(
             () => _submissionApiTools.GetSubmission(submissionId));
+    }
+
+    [Fact]
+    public async Task GetSubmission_WithMaxLongValue_ShouldHandleLargeIds()
+    {
+        // Arrange
+        var submissionId = long.MaxValue; // 9223372036854775807
+        var expectedJsonResponse = $"{{\"id\": {submissionId}, \"status\": \"active\"}}";
+
+        var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(expectedJsonResponse, Encoding.UTF8, "application/json")
+        };
+
+        _mockHttpHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _submissionApiTools.GetSubmission(submissionId);
+
+        // Assert - Should handle very large ID values
+        var parsedResult = JsonSerializer.Deserialize<JsonElement>(result);
+        Assert.Equal(submissionId, parsedResult.GetProperty("id").GetInt64());
+    }
+
+    [Fact]
+    public async Task GetSubmission_WhenApiReturnsEmptyResponse_ShouldThrowJsonException()
+    {
+        // Arrange
+        var submissionId = 12345L;
+        var emptyResponse = "";
+
+        var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(emptyResponse, Encoding.UTF8, "application/json")
+        };
+
+        _mockHttpHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act & Assert - Should throw JsonException for empty response
+        await Assert.ThrowsAsync<JsonException>(
+            () => _submissionApiTools.GetSubmission(submissionId));
+    }
+
+    [Fact]
+    public async Task GetSubmission_WhenApiReturnsNonJsonContentType_ShouldStillProcessResponse()
+    {
+        // Arrange
+        var submissionId = 12345L;
+        var validJsonResponse = "{\"id\": 12345, \"status\": \"active\"}";
+
+        var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(validJsonResponse, Encoding.UTF8, "text/plain") // Wrong content type
+        };
+
+        _mockHttpHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(httpResponse);
+
+        // Act
+        var result = await _submissionApiTools.GetSubmission(submissionId);
+
+        // Assert - Should process valid JSON regardless of content type
+        var parsedResult = JsonSerializer.Deserialize<JsonElement>(result);
+        Assert.Equal(12345, parsedResult.GetProperty("id").GetInt64());
+        Assert.Equal("active", parsedResult.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task GetSubmission_WhenHttpContextMissing_ShouldThrowMcpException()
+    {
+        // Arrange
+        var submissionId = 12345L;
+        
+        // Setup HttpContextAccessor to return null (simulating missing context)
+        var mockHttpContextAccessorNoContext = new Mock<IHttpContextAccessor>();
+        mockHttpContextAccessorNoContext.Setup(x => x.HttpContext).Returns((HttpContext?)null);
+        
+        var mockLogger = new Mock<ILogger<SubmissionApiTools>>();
+        var toolsWithNoContext = new SubmissionApiTools(
+            _mockHttpClientFactory.Object,
+            mockHttpContextAccessorNoContext.Object,
+            _mockConfiguration.Object,
+            mockLogger.Object,
+            _mockIdsOptions.Object,
+            _mockExternalApisOptions.Object
+        );
+
+        // Act & Assert - Should throw McpException when HttpContext is missing
+        var exception = await Assert.ThrowsAsync<McpException>(
+            () => toolsWithNoContext.GetSubmission(submissionId));
+        
+        Assert.Contains("HTTP context not available", exception.Message);
+    }
+
+    [Theory]
+    [InlineData("")] // Empty token
+    [InlineData("InvalidToken")] // No Bearer prefix
+    [InlineData("Basic dGVzdDp0ZXN0")] // Wrong auth type
+    [InlineData("Bearer")] // Bearer with no token
+    [InlineData("Bearer ")] // Bearer with space but no token
+    public async Task GetSubmission_WithInvalidAuthorizationHeader_ShouldThrowMcpException(string authHeader)
+    {
+        // Arrange
+        var submissionId = 12345L;
+        
+        // Setup HttpContext with invalid Authorization header
+        var mockHttpContext = new Mock<HttpContext>();
+        var mockRequest = new Mock<HttpRequest>();
+        var mockHeaders = new Mock<IHeaderDictionary>();
+        
+        mockHeaders.Setup(h => h.Authorization).Returns(new Microsoft.Extensions.Primitives.StringValues(authHeader));
+        mockRequest.Setup(r => r.Headers).Returns(mockHeaders.Object);
+        mockHttpContext.Setup(c => c.Request).Returns(mockRequest.Object);
+        
+        var mockHttpContextAccessorInvalid = new Mock<IHttpContextAccessor>();
+        mockHttpContextAccessorInvalid.Setup(x => x.HttpContext).Returns(mockHttpContext.Object);
+        
+        var mockLogger = new Mock<ILogger<SubmissionApiTools>>();
+        var toolsWithInvalidAuth = new SubmissionApiTools(
+            _mockHttpClientFactory.Object,
+            mockHttpContextAccessorInvalid.Object,
+            _mockConfiguration.Object,
+            mockLogger.Object,
+            _mockIdsOptions.Object,
+            _mockExternalApisOptions.Object
+        );
+
+        // Act & Assert - Should throw McpException for invalid auth header
+        var exception = await Assert.ThrowsAsync<McpException>(
+            () => toolsWithInvalidAuth.GetSubmission(submissionId));
+        
+        Assert.Contains("No valid bearer token found in request", exception.Message);
     }
 
     #endregion

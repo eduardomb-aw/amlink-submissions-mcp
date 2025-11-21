@@ -45,22 +45,47 @@ public sealed class SubmissionApiTools
     /// <returns>Submission details in JSON format.</returns>
     [McpServerTool, Description("Get submission details from the Submission API using Identity Server 4 authentication.")]
     public async Task<string> GetSubmission(
-        [Description("The ID of the submission to retrieve")] string submissionId)
+        [Description("The ID of the submission to retrieve")] long submissionId)
     {
+        // Validate parameters BEFORE making HTTP calls
+        if (submissionId <= 0)
+        {
+            throw new ArgumentException("Submission ID must be a positive integer.", nameof(submissionId));
+        }
+
         var submissionApiToken = await GetSubmissionApiTokenAsync();
 
         var client = _httpClientFactory.CreateClient("SubmissionApi");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", submissionApiToken);
+        
+        // Set User Agent from configuration
+        if (!string.IsNullOrEmpty(_externalApisConfig.SubmissionApi.UserAgent))
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(_externalApisConfig.SubmissionApi.UserAgent);
+        }
 
         var response = await client.GetAsync($"submissions/{submissionId}");
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new McpException($"Submission API call failed: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+            var errorContent = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException($"Submission API call failed: {response.StatusCode} - {errorContent}", null, response.StatusCode);
         }
 
         var jsonContent = await response.Content.ReadAsStringAsync();
-        return $"Submission Details:\n{jsonContent}";
+        
+        // Validate JSON by attempting to parse it
+        try
+        {
+            JsonSerializer.Deserialize<JsonElement>(jsonContent);
+        }
+        catch (JsonException)
+        {
+            // Re-throw JsonException to maintain expected behavior
+            throw;
+        }
+        
+        return jsonContent;
     }
 
     /// <summary>
