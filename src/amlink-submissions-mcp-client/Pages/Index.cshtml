@@ -5,9 +5,9 @@
     ViewData["Title"] = "MCP Client";
 }
 
-<div class="text-center">
+<div class="text-center mb-4">
     <h1 class="display-4">MCP Client</h1>
-    <p>Connect to the Model Context Protocol server with OAuth authentication.</p>
+    <p class="lead">Connect to the Model Context Protocol server with OAuth authentication.</p>
 </div>
 
 <div class="row">
@@ -28,21 +28,21 @@
         }
 
         <!-- Authentication Section -->
-        <div class="card mb-3">
+        <div class="card mb-4">
             <div class="card-header">
-                <h5>Authentication Status</h5>
+                <h5 class="mb-0">Authentication Status</h5>
             </div>
             <div class="card-body">
                 @if (Model.IsAuthenticated)
                 {
-                    <p><span class="badge bg-success">✓ Authenticated</span> Ready to connect to MCP server.</p>
+                    <p class="mb-3"><span class="badge bg-success me-2">✓ Authenticated</span>Ready to connect to MCP server.</p>
                     <form method="post" asp-page-handler="ClearToken" class="d-inline">
                         <button type="submit" class="btn btn-outline-warning btn-sm">Clear Authentication</button>
                     </form>
                 }
                 else
                 {
-                    <p><span class="badge bg-warning text-dark">⚠️ Not Authenticated</span> Please authenticate first.</p>
+                    <p class="mb-3"><span class="badge bg-warning text-dark me-2">⚠️ Not Authenticated</span>Please authenticate first.</p>
                     <form method="post" asp-page-handler="Authenticate" class="d-inline">
                         <button type="submit" class="btn btn-primary">Start Authentication</button>
                     </form>
@@ -65,18 +65,18 @@
         </div>
 
         <!-- MCP Connection Section -->
-        <div class="card mb-3">
+        <div class="card mb-4">
             <div class="card-header">
-                <h5>MCP Server Connection</h5>
+                <h5 class="mb-0">MCP Server Connection</h5>
             </div>
             <div class="card-body">
                 @if (Model.IsConnected)
                 {
-                    <p><span class="badge bg-success">✓ Connected</span> Successfully connected to MCP server.</p>
+                    <p class="mb-3"><span class="badge bg-success me-2">✓ Connected</span>Successfully connected to MCP server.</p>
                 }
                 else
                 {
-                    <p><span class="badge bg-secondary">○ Disconnected</span> Not connected to MCP server.</p>
+                    <p class="mb-3"><span class="badge bg-secondary me-2">○ Disconnected</span>Not connected to MCP server.</p>
                     @if (Model.IsAuthenticated)
                     {
                         <form method="post" asp-page-handler="Connect" class="d-inline">
