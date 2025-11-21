@@ -46,9 +46,9 @@ A Model Context Protocol (MCP) server and client implementation for AmLink submi
    ```
 
 5. **Access the applications**
-   - **Client (HTTPS)**: https://localhost:5001
-   - **Client (HTTP)**: http://localhost:5000
-   - **Server (HTTPS)**: https://localhost:8443
+   - **Client (HTTPS)**: <https://localhost:5001>
+   - **Client (HTTP)**: <http://localhost:5000>
+   - **Server (HTTPS)**: <https://localhost:8443>
 
 ## 🔄 CI/CD & Deployment
 
@@ -85,11 +85,11 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 📖 **Full deployment guide**: See [`docs/registry-deployment.md`](docs/registry-deployment.md)
-   - **Server (HTTP)**: http://localhost:8080
+- **Server (HTTP)**: <http://localhost:8080>
 
 ## 📁 Project Structure
 
-```
+```text
 ├── src/
 │   ├── amlink-submissions-mcp-client/    # Web client application
 │   └── amlink-submissions-mcp-server/    # MCP server implementation
@@ -187,7 +187,7 @@ docker-compose up -d --build
 
 ## 🚢 Deployment
 
-### Production Deployment
+### Docker Compose Production
 
 1. **Set production environment variables**
 2. **Deploy with production configuration**
