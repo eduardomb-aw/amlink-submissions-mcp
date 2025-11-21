@@ -183,7 +183,11 @@ public class SubmissionApiToolsTests
     public void JwtToken_Should_HandleMultipleScopes()
     {
         // Arrange
-        var scopes = "scope1 scope2 scope3 submission-api scope5";
+        const string scope1 = "scope1";
+        const string scope2 = "scope2";
+        const string scope3 = "scope3";
+        const string scope5 = "scope5";
+        var scopes = $"{scope1} {scope2} {scope3} {TestScope} {scope5}";
         var token = CreateTestToken(scopes);
         var handler = new JwtSecurityTokenHandler();
 
@@ -230,5 +234,26 @@ public class SubmissionApiToolsTests
         // Assert
         Assert.NotNull(scopeClaim);
         Assert.Empty(scopes);
+    }
+
+    [Fact]
+    public void JwtToken_Should_HandleScopesWithMultipleSpaces()
+    {
+        // Arrange
+        var scopes = $"{TestScope}  {OtherScope}   another-scope"; // Multiple spaces between scopes
+        var token = CreateTestToken(scopes);
+        var handler = new JwtSecurityTokenHandler();
+
+        // Act
+        var jwtToken = handler.ReadJwtToken(token);
+        var scopeClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "scope");
+        var scopeArray = scopeClaim?.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+
+        // Assert
+        Assert.NotNull(scopeClaim);
+        Assert.Equal(3, scopeArray.Length); // Should correctly handle multiple spaces
+        Assert.Contains(TestScope, scopeArray);
+        Assert.Contains(OtherScope, scopeArray);
+        Assert.Contains("another-scope", scopeArray);
     }
 }

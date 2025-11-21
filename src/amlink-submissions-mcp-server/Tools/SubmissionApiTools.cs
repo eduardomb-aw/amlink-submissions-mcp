@@ -232,7 +232,7 @@ public sealed class SubmissionApiTools
                 return false;
             }
             
-            var scopes = scopeClaim.Value.Split(' ');
+            var scopes = scopeClaim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             return scopes.Contains(requiredScope);
         }
         catch (Exception ex)
