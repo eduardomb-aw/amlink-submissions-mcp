@@ -210,28 +210,28 @@ public sealed class SubmissionApiTools
         try
         {
             var handler = new JwtSecurityTokenHandler();
-            
+
             if (!handler.CanReadToken(token))
             {
                 _logger.LogWarning("Invalid JWT token format");
                 return false;
             }
-            
+
             var jwtToken = handler.ReadJwtToken(token);
-            
+
             if (jwtToken.ValidTo < DateTime.UtcNow)
             {
                 _logger.LogWarning("JWT token has expired");
                 return false;
             }
-            
+
             var scopeClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "scope");
             if (scopeClaim == null)
             {
                 _logger.LogWarning("JWT token does not contain scope claim");
                 return false;
             }
-            
+
             var scopes = scopeClaim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             return scopes.Contains(requiredScope);
         }

@@ -22,7 +22,7 @@ namespace amlink_submissions_mcp.Tests.Tools;
 public class SubmissionApiToolsTests
 {
     #region TDD Tests for GetSubmission Method (from main branch)
-    
+
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
     private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
     private readonly Mock<IConfiguration> _mockConfiguration;
@@ -40,7 +40,7 @@ public class SubmissionApiToolsTests
         _mockIdsOptions = new Mock<IOptions<IdentityServerConfiguration>>();
         _mockExternalApisOptions = new Mock<IOptions<ExternalApisConfiguration>>();
         _mockHttpHandler = new Mock<HttpMessageHandler>();
-        
+
         _httpClient = new HttpClient(_mockHttpHandler.Object)
         {
             BaseAddress = new Uri("https://api.test.com/")
@@ -75,7 +75,7 @@ public class SubmissionApiToolsTests
         var mockHttpContext = new Mock<HttpContext>();
         var mockRequest = new Mock<HttpRequest>();
         var mockHeaders = new Mock<IHeaderDictionary>();
-        
+
         mockHeaders.Setup(h => h["Authorization"]).Returns("Bearer test-token");
         mockRequest.Setup(r => r.Headers).Returns(mockHeaders.Object);
         mockHttpContext.Setup(c => c.Request).Returns(mockRequest.Object);
@@ -102,7 +102,7 @@ public class SubmissionApiToolsTests
         // Act & Assert - Should validate parameters BEFORE making HTTP calls
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
             () => _submissionApiTools.GetSubmission(submissionId!));
-        
+
         Assert.Equal("submissionId", exception.ParamName);
     }
 
@@ -115,7 +115,7 @@ public class SubmissionApiToolsTests
         // Act & Assert - Should validate empty/whitespace parameters
         var exception = await Assert.ThrowsAsync<ArgumentException>(
             () => _submissionApiTools.GetSubmission(submissionId));
-        
+
         Assert.Equal("submissionId", exception.ParamName);
         Assert.Contains("cannot be empty or whitespace", exception.Message);
     }
@@ -126,7 +126,7 @@ public class SubmissionApiToolsTests
         // Arrange
         var submissionId = "12345";
         var expectedJsonResponse = """{"id": "12345", "status": "active", "submitter": "test@example.com"}""";
-        
+
         var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent(expectedJsonResponse, Encoding.UTF8, "application/json")
@@ -176,7 +176,7 @@ public class SubmissionApiToolsTests
         // Act & Assert - Should throw HTTP-specific exceptions, not generic McpException
         var exception = await Assert.ThrowsAsync<HttpRequestException>(
             () => _submissionApiTools.GetSubmission(submissionId));
-        
+
         Assert.Contains(statusCode.ToString(), exception.Message);
     }
 
@@ -187,7 +187,7 @@ public class SubmissionApiToolsTests
         var submissionId = "12345";
         var expectedJsonResponse = """{"id": "12345"}""";
         HttpRequestMessage? capturedRequest = null;
-        
+
         var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent(expectedJsonResponse, Encoding.UTF8, "application/json")
@@ -219,7 +219,7 @@ public class SubmissionApiToolsTests
         // Arrange
         var submissionId = "12345";
         var invalidJsonResponse = "{ invalid json }";
-        
+
         var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent(invalidJsonResponse, Encoding.UTF8, "application/json")
