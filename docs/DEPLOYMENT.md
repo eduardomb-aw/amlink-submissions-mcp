@@ -312,6 +312,6 @@ docker-compose -f docker-compose.yml up -d --scale amlink-mcp-server=1
 ```
 
 ### Emergency Contacts
-- **DevOps Team**: devops@example.com
-- **Security Team**: security@example.com
-- **On-call Engineer**: +1-555-0123
+- **Repository Issues**: Create GitHub issue
+- **Security Issues**: Use GitHub Security tab
+- **Urgent Issues**: Contact repository maintainers via GitHub

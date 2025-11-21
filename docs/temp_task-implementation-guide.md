@@ -1,6 +1,6 @@
 # Task Implementation Guide
 
-This guide helps contributors implement the tasks identified in [TASKS.md](../TASKS.md) and [POTENTIAL-IMPROVEMENTS.md](POTENTIAL-IMPROVEMENTS.md).
+This guide helps contributors implement the tasks identified in [TASKS.md](../TASKS.md) and [temp_potential-improvements.md](temp_potential-improvements.md).
 
 ## Quick Start
 
@@ -16,7 +16,7 @@ This guide helps contributors implement the tasks identified in [TASKS.md](../TA
 ### 1. Pre-Implementation
 
 - [ ] Read the full task description in TASKS.md
-- [ ] Review related documentation (POTENTIAL-IMPROVEMENTS.md)
+- [ ] Review related documentation (temp_potential-improvements.md)
 - [ ] Check dependencies - ensure prerequisite tasks are complete
 - [ ] Understand acceptance criteria
 - [ ] Ask questions if anything is unclear (GitHub Discussions)
@@ -337,7 +337,7 @@ Follow the existing code style in the repository:
 ## Getting Help
 
 - **GitHub Discussions:** Ask questions and discuss ideas
-- **POTENTIAL-IMPROVEMENTS.md:** Detailed analysis and recommendations
+- **temp_potential-improvements.md:** Detailed analysis and recommendations
 - **TASKS.md:** Complete task specifications
 - **README.md:** Project overview and setup
 - **Code comments:** Look at existing code for patterns
@@ -361,13 +361,13 @@ Before requesting review, ensure:
 If you have questions about a task:
 
 1. Review the task description in TASKS.md
-2. Check POTENTIAL-IMPROVEMENTS.md for context
+2. Check temp_potential-improvements.md for context
 3. Search existing issues and discussions
 4. Ask in GitHub Discussions
 5. Comment on the related issue
 
 ---
 
-*Document created: 2025-11-20*  
+*Document created: 2025-11-21*  
 *For: AmLink Submissions MCP Contributors*  
 *Version: 1.0*

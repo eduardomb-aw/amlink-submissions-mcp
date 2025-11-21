@@ -18,20 +18,20 @@ This guide walks through the automated deployment to Azure Web Apps for Containe
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Azure Container Apps                    │
+│                  Azure Web Apps for Containers             │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────────────┐    ┌─────────────────────────────┐  │
 │  │    MCP Client       │    │       MCP Server            │  │
 │  │    (Web UI)         │    │    (API + Identity)         │  │
 │  │                     │    │                             │  │
-│  │  • Auto-scaling     │    │  • Auto-scaling             │  │
+│  │  • Container        │    │  • Container                │  │
 │  │  • Health checks    │    │  • Health checks            │  │
 │  │  • HTTPS endpoint   │    │  • HTTPS endpoint           │  │
 │  └─────────────────────┘    └─────────────────────────────┘  │
 ├─────────────────────────────────────────────────────────────┤
-│                Container Apps Environment                   │
+│                   App Service Plan                         │
 ├─────────────────────────────────────────────────────────────┤
-│              Log Analytics Workspace                       │
+│                   VNet Integration                          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -149,36 +149,17 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 ## ⚡ Key Features
 
 ### **Auto-Scaling**
-```bicep
-scale: {
-  minReplicas: 1
-  maxReplicas: 10
-  rules: [
-    {
-      name: 'http-scaling'
-      http: {
-        metadata: {
-          concurrentRequests: '30'  // Scale up at 30 concurrent requests
-        }
-      }
-    }
-  ]
-}
+```yaml
+# Web Apps auto-scaling configured via App Service Plan
+# Scale up/out rules configured in Azure Portal
+# Can scale based on CPU, memory, or request metrics
 ```
 
 ### **Health Checks**
-```bicep
-probes: [
-  {
-    type: 'Liveness'
-    httpGet: {
-      path: '/health'
-      port: 9080
-    }
-    initialDelaySeconds: 30
-    periodSeconds: 10
-  }
-]
+```yaml
+# Web Apps health checks via /health endpoint
+# Configured in deployment pipeline
+# Monitors application readiness and liveness
 ```
 
 ### **Secret Management**
@@ -226,17 +207,16 @@ probes: [
 
 ### **Azure Portal**
 1. Navigate to your resource group
-2. View Container Apps for deployment status
-3. Check Log Analytics for application logs
-4. Monitor scaling and performance metrics
+2. View Web Apps for deployment status
+3. Check Log Stream for application logs
+4. Monitor performance and metrics
 
 ### **Application Logs**
 ```bash
 # View logs via Azure CLI
-az containerapp logs show \
-  --name ca-amlink-submissions-mcp-staging-server \
-  --resource-group rg-amlink-submissions-mcp-staging \
-  --follow
+az webapp log tail \
+  --name app-amlink-submissions-mcp-staging-server \
+  --resource-group rg-amlink-submissions-mcp-staging
 ```
 
 ### **Common Issues**
