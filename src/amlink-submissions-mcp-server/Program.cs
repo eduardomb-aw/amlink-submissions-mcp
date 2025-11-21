@@ -49,7 +49,8 @@ app.UseAuthorization();
 app.MapMcp().RequireAuthorization();
 
 // Display startup information
-DisplayStartupInfo(serverConfig!, idsConfig!, externalApisConfig!);
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+DisplayStartupInfo(serverConfig!, idsConfig!, externalApisConfig!, logger);
 
 if (IsDevelopment)
 {
@@ -251,14 +252,14 @@ static void ConfigureAuthentication(
     });
 }
 
-static void DisplayStartupInfo(ServerConfiguration serverConfig, IdentityServerConfiguration idsConfig, ExternalApisConfiguration externalApisConfig)
+static void DisplayStartupInfo(ServerConfiguration serverConfig, IdentityServerConfiguration idsConfig, ExternalApisConfiguration externalApisConfig, ILogger<Program> logger)
 {
-    Console.WriteLine($"Starting MCP server with Identity Server 4 authorization at {serverConfig.Url}");
-    Console.WriteLine($"Using Identity Server 4: {idsConfig.Url}");
-    Console.WriteLine($"Client ID: {idsConfig.ClientId}");
-    Console.WriteLine($"Grant Type: {idsConfig.GrantType}");
-    Console.WriteLine($"Supported Scopes: {string.Join(", ", idsConfig.ScopesList)}");
-    Console.WriteLine($"Submission API: {externalApisConfig.SubmissionApi.BaseUrl} (Scope: {externalApisConfig.SubmissionApi.RequiredScope})");
-    Console.WriteLine($"Protected Resource Metadata URL: {serverConfig.Url}.well-known/oauth-protected-resource");
-    Console.WriteLine("Press Ctrl+C to stop the server");
+    logger.LogInformation("Starting MCP server with Identity Server 4 authorization at {ServerUrl}", serverConfig.Url);
+    logger.LogInformation("Using Identity Server 4: {IdentityServerUrl}", idsConfig.Url);
+    logger.LogInformation("Client ID: {ClientId}", idsConfig.ClientId);
+    logger.LogInformation("Grant Type: {GrantType}", idsConfig.GrantType);
+    logger.LogInformation("Supported Scopes: {Scopes}", string.Join(", ", idsConfig.ScopesList));
+    logger.LogInformation("Submission API: {SubmissionApiUrl} (Scope: {RequiredScope})", externalApisConfig.SubmissionApi.BaseUrl, externalApisConfig.SubmissionApi.RequiredScope);
+    logger.LogInformation("Protected Resource Metadata URL: {MetadataUrl}", $"{serverConfig.Url}.well-known/oauth-protected-resource");
+    logger.LogInformation("Press Ctrl+C to stop the server");
 }
