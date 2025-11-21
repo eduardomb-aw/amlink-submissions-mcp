@@ -70,7 +70,7 @@ This document outlines the development workflow for the AmLink Submissions MCP p
 ### Prerequisites
 ```bash
 # Install required tools
-winget install Microsoft.DotNet.SDK.10
+winget install Microsoft.DotNet.SDK.Preview  # .NET 10.0
 winget install Docker.DockerDesktop
 winget install Git.Git
 ```
@@ -132,12 +132,13 @@ Images are published to GitHub Container Registry:
 ## 🏗️ Deployment Environments
 
 ### Staging Environment
-- **URL**: `https://staging.amlink-mcp.example.com`
+- **Client**: `https://app-amlink-submissions-mcp-staging-client.azurewebsites.net`
+- **Server**: `https://app-amlink-submissions-mcp-staging-server.azurewebsites.net`
 - **Purpose**: Integration testing and validation
-- **Auto-deploy**: On push to `main`
+- **Auto-deploy**: On releases
 
 ### Production Environment
-- **URL**: `https://amlink-mcp.example.com`
+- **Status**: Not yet provisioned
 - **Purpose**: Live production environment
 - **Deploy**: Manual approval required
 

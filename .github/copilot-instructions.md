@@ -130,8 +130,8 @@ Required environment variables (see `.env.example`):
 ## Documentation
 
 - **Main README**: `/README.md` - Quick start and overview
-- **Deployment**: `/docs/DEPLOYMENT.md`, `/docs/registry-deployment.md`
-- **Development**: `/docs/DEVELOPMENT.md`
+- **Deployment**: `/docs/deployment.md`, `/docs/registry-deployment.md`
+- **Development**: `/docs/development.md`
 - **Azure Deployment**: `/docs/azure-deployment.md`
 - **Release Pipeline**: `/docs/release-pipeline.md`
 

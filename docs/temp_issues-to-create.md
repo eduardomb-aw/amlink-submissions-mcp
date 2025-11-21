@@ -16,7 +16,7 @@ This document contains the text for each GitHub issue that should be created bas
 
 #### Description
 
-Currently, the repository has only ~7% test coverage with 1 test file containing 5 tests for 15+ production files. This issue aims to achieve 80%+ code coverage as specified in Issue #2.
+Currently, the repository has only ~7% test coverage with 1 test file containing 4 tests for 15+ production files. This issue aims to achieve 80%+ code coverage as specified in Issue #2.
 
 #### Scope
 
@@ -63,7 +63,7 @@ Currently, the repository has only ~7% test coverage with 1 test file containing
 #### Related Documentation
 
 - [TASKS.md - Task 1](../TASKS.md#task-1-add-comprehensive-test-suite)
-- [POTENTIAL-IMPROVEMENTS.md](POTENTIAL-IMPROVEMENTS.md#1-insufficient-test-coverage)
+- [temp_potential-improvements.md](temp_potential-improvements.md#1-insufficient-test-coverage)
 - Related to Issue #2
 
 ---
@@ -140,7 +140,7 @@ Should be implemented before or alongside the comprehensive test suite task.
 #### Related Documentation
 
 - [TASKS.md - Task 2](../TASKS.md#task-2-add-input-validation-to-all-mcp-tools)
-- [POTENTIAL-IMPROVEMENTS.md](POTENTIAL-IMPROVEMENTS.md#2-missing-input-validation)
+- [temp_potential-improvements.md](temp_potential-improvements.md#2-missing-input-validation)
 
 ---
 
@@ -210,7 +210,7 @@ None
 #### Related Documentation
 
 - [TASKS.md - Task 3](../TASKS.md#task-3-replace-consolewriteline-with-structured-logging)
-- [POTENTIAL-IMPROVEMENTS.md](POTENTIAL-IMPROVEMENTS.md#3-consolewriteline-instead-of-structured-logging)
+- [temp_potential-improvements.md](temp_potential-improvements.md#3-consolewriteline-instead-of-structured-logging)
 - [ASP.NET Core Logging](https://learn.microsoft.com/aspnet/core/fundamentals/logging)
 
 ---
@@ -303,7 +303,7 @@ Structured logging task should be completed first for proper error logging.
 #### Related Documentation
 
 - [TASKS.md - Task 4](../TASKS.md#task-4-improve-jwt-token-handling)
-- [POTENTIAL-IMPROVEMENTS.md](POTENTIAL-IMPROVEMENTS.md#4-basic-jwt-token-parsing)
+- [temp_potential-improvements.md](temp_potential-improvements.md#4-basic-jwt-token-parsing)
 - [JWT Best Practices](https://datatracker.ietf.org/doc/html/rfc8725)
 
 ---
@@ -379,7 +379,7 @@ None
 #### Related Documentation
 
 - [TASKS.md - Task 5](../TASKS.md#task-5-add-http-client-resilience)
-- [POTENTIAL-IMPROVEMENTS.md](POTENTIAL-IMPROVEMENTS.md#5-missing-http-client-resilience)
+- [temp_potential-improvements.md](temp_potential-improvements.md#5-missing-http-client-resilience)
 - [Polly Documentation](https://github.com/App-vNext/Polly)
 
 ---
@@ -458,7 +458,7 @@ Structured logging task should be completed first.
 #### Related Documentation
 
 - [TASKS.md - Task 6](../TASKS.md#task-6-add-correlation-ids-and-improve-error-context)
-- [POTENTIAL-IMPROVEMENTS.md](POTENTIAL-IMPROVEMENTS.md#6-limited-error-context-and-correlation)
+- [temp_potential-improvements.md](temp_potential-improvements.md#6-limited-error-context-and-correlation)
 
 ---
 
@@ -542,7 +542,7 @@ None
 #### Related Documentation
 
 - [TASKS.md - Task 7](../TASKS.md#task-7-implement-health-checks)
-- [POTENTIAL-IMPROVEMENTS.md](POTENTIAL-IMPROVEMENTS.md#7-missing-health-checks)
+- [temp_potential-improvements.md](temp_potential-improvements.md#7-missing-health-checks)
 - [ASP.NET Core Health Checks](https://learn.microsoft.com/aspnet/core/host-and-deploy/health-checks)
 
 ---
@@ -697,5 +697,5 @@ If you have GitHub CLI access and appropriate permissions, you can create these 
 
 ---
 
-*Document created: 2025-11-20*  
+*Document created: 2025-11-21*  
 *Total issues: 10 (3 High, 4 Medium, 3 Low priority)*

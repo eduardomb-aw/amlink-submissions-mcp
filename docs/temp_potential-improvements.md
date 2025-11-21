@@ -740,6 +740,6 @@ For questions or discussions about these recommendations, please:
 
 ---
 
-*Document generated: 2025-11-20*  
+*Document generated: 2025-11-21*  
 *Repository analyzed: eduardomb-aw/amlink-submissions-mcp*  
 *Analysis scope: Code quality, testing, security, observability*

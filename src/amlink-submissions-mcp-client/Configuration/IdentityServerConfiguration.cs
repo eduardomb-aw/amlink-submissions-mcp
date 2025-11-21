@@ -3,7 +3,7 @@ namespace AmLink.Submissions.Mcp.Client.Configuration;
 public sealed class IdentityServerConfiguration
 {
     public const string SectionName = "IdentityServer";
-    
+
     public required string Url { get; set; }
     public required string ClientId { get; set; }
     public string ClientSecret { get; set; } = string.Empty;
@@ -12,7 +12,7 @@ public sealed class IdentityServerConfiguration
     public required string ServerClientId { get; set; }
     public required string RedirectUri { get; set; }
     public string ResponseMode { get; set; } = "query";
-    
+
     // Derived properties for OAuth endpoints
     public string AuthorityUrl => Url;
     public string TokenEndpoint => $"{Url.TrimEnd('/')}/connect/token";
