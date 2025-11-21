@@ -35,7 +35,7 @@ public class SubmissionApiToolsTests
         _mockIdsOptions = new Mock<IOptions<IdentityServerConfiguration>>();
         _mockExternalApisOptions = new Mock<IOptions<ExternalApisConfiguration>>();
         _mockHttpHandler = new Mock<HttpMessageHandler>();
-        
+
         _httpClient = new HttpClient(_mockHttpHandler.Object)
         {
             BaseAddress = new Uri("https://api.test.com/")
@@ -70,15 +70,15 @@ public class SubmissionApiToolsTests
         var mockHttpContext = new Mock<HttpContext>();
         var mockRequest = new Mock<HttpRequest>();
         var mockHeaders = new HeaderDictionary();
-        
+
         // Create a simple JWT-like token with the required scope
         var header = Convert.ToBase64String(Encoding.UTF8.GetBytes("{\"typ\":\"JWT\",\"alg\":\"HS256\"}"));
         var payload = Convert.ToBase64String(Encoding.UTF8.GetBytes("{\"scope\":\"submission-api\",\"sub\":\"test-user\"}"));
         var signature = Convert.ToBase64String(Encoding.UTF8.GetBytes("test-signature"));
         var testJwtToken = $"{header}.{payload}.{signature}";
-        
+
         mockHeaders["Authorization"] = $"Bearer {testJwtToken}";
-        
+
         mockRequest.Setup(r => r.Headers).Returns(mockHeaders);
         mockHttpContext.Setup(c => c.Request).Returns(mockRequest.Object);
         _mockHttpContextAccessor.Setup(a => a.HttpContext).Returns(mockHttpContext.Object);
@@ -102,7 +102,7 @@ public class SubmissionApiToolsTests
         // Act & Assert - Should validate parameters BEFORE making HTTP calls
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
             () => _submissionApiTools.GetSubmission(submissionId!));
-        
+
         Assert.Equal("submissionId", exception.ParamName);
     }
 
@@ -117,7 +117,7 @@ public class SubmissionApiToolsTests
         // Act & Assert - Should validate parameters BEFORE making HTTP calls
         var exception = await Assert.ThrowsAsync<ArgumentException>(
             () => _submissionApiTools.GetSubmission(submissionId));
-        
+
         Assert.Equal("submissionId", exception.ParamName);
         Assert.Contains("cannot be empty or whitespace", exception.Message);
     }
@@ -185,7 +185,7 @@ public class SubmissionApiToolsTests
         // Act & Assert - Should throw HttpRequestException with meaningful message
         var exception = await Assert.ThrowsAsync<HttpRequestException>(
             () => _submissionApiTools.GetSubmission(submissionId));
-        
+
         Assert.Contains(statusCode.ToString(), exception.Message);
         Assert.Contains(errorMessage, exception.Message);
     }
@@ -250,7 +250,7 @@ public class SubmissionApiToolsTests
     {
         // Arrange
         var submissionId = "SUB-12345";
-        
+
         _mockHttpHandler
             .Protected()
             .Setup<Task<HttpResponseMessage>>(

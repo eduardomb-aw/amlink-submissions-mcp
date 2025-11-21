@@ -41,15 +41,15 @@ public class McpService : IMcpService
         }
 
         var httpClient = _httpClientFactory.CreateClient("mcp-client");
-        
+
         // Add the bearer token to the HTTP client
-        httpClient.DefaultRequestHeaders.Authorization = 
+        httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
 
         var consoleLoggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-        
+
         _logger.LogInformation("Creating authenticated MCP client for endpoint: {Endpoint}", _mcpConfig.Url);
-        
+
         // Create MCP transport WITHOUT OAuth (since we're pre-authenticated)
         var transport = new HttpClientTransport(new()
         {
@@ -66,10 +66,10 @@ public class McpService : IMcpService
         {
             var client = await CreateAuthenticatedClientAsync(cancellationToken);
             _logger.LogInformation("Connecting to MCP server to retrieve available tools");
-            
+
             var tools = await client.ListToolsAsync(cancellationToken: cancellationToken);
             _logger.LogInformation("Successfully retrieved {ToolCount} tools from MCP server", tools.Count());
-            
+
             return tools.ToList();
         }
         catch (UnauthorizedAccessException)
@@ -90,13 +90,13 @@ public class McpService : IMcpService
         {
             var client = await CreateAuthenticatedClientAsync(cancellationToken);
             _logger.LogInformation("Invoking tool: {ToolName}", toolName);
-            
+
             var result = await client.CallToolAsync(toolName, arguments, cancellationToken: cancellationToken);
 
             var content = result.Content?.FirstOrDefault() as TextContentBlock;
             var resultText = content?.Text ?? "No result returned";
             _logger.LogInformation("Tool {ToolName} executed successfully", toolName);
-            
+
             return resultText;
         }
         catch (UnauthorizedAccessException)

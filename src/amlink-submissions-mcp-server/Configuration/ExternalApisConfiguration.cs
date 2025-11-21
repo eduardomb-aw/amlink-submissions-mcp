@@ -3,7 +3,7 @@ namespace AmLink.Submission.Mcp.Server.Configuration;
 public sealed class ExternalApisConfiguration
 {
     public const string SectionName = "ExternalApis";
-    
+
     public SubmissionApiConfiguration SubmissionApi { get; set; } = new();
 }
 

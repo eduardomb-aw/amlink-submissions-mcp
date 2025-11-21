@@ -26,8 +26,8 @@ public class OpenAiService : IOpenAiService
         _httpClient = httpClientFactory.CreateClient("openai");
         _mcpService = mcpService;
         _logger = logger;
-        
-        _apiKey = configuration["OPENAI_API_KEY"] ?? 
+
+        _apiKey = configuration["OPENAI_API_KEY"] ??
                  throw new InvalidOperationException("OPENAI_API_KEY is required but not configured");
 
         _httpClient.BaseAddress = new Uri("https://api.openai.com/v1/");
@@ -67,7 +67,7 @@ public class OpenAiService : IOpenAiService
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             var response = await _httpClient.PostAsync("chat/completions", content, cancellationToken);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -77,7 +77,7 @@ public class OpenAiService : IOpenAiService
 
             var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
             using var document = JsonDocument.Parse(responseJson);
-            
+
             var choices = document.RootElement.GetProperty("choices");
             if (choices.GetArrayLength() == 0)
             {
@@ -113,7 +113,7 @@ public class OpenAiService : IOpenAiService
         try
         {
             var mcpTools = await _mcpService.GetAvailableToolsAsync(cancellationToken);
-            
+
             return mcpTools.Select(tool => new
             {
                 type = "function",
@@ -189,7 +189,7 @@ public class OpenAiService : IOpenAiService
                 {
                     using var document = JsonDocument.Parse(argumentsJson);
                     arguments = new Dictionary<string, object?>();
-                    
+
                     foreach (var property in document.RootElement.EnumerateObject())
                     {
                         arguments[property.Name] = property.Value.ValueKind switch
@@ -242,14 +242,14 @@ public class OpenAiService : IOpenAiService
                 {
                     var followUpResponseJson = await followUpResponse.Content.ReadAsStringAsync(cancellationToken);
                     using var followUpDocument = JsonDocument.Parse(followUpResponseJson);
-                    
+
                     var followUpChoices = followUpDocument.RootElement.GetProperty("choices");
                     if (followUpChoices.GetArrayLength() > 0)
                     {
                         var followUpChoice = followUpChoices[0];
                         var followUpMessage = followUpChoice.GetProperty("message");
-                        
-                        if (followUpMessage.TryGetProperty("content", out var followUpContentProperty) && 
+
+                        if (followUpMessage.TryGetProperty("content", out var followUpContentProperty) &&
                             followUpContentProperty.ValueKind == JsonValueKind.String)
                         {
                             return followUpContentProperty.GetString() ?? string.Join("\n\n", toolResults);
