@@ -1,9 +1,12 @@
 using AmLink.Submission.Mcp.Server.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using ModelContextProtocol.AspNetCore.Authentication;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +29,21 @@ ConfigureAuthentication(builder.Services, serverConfig!, idsConfig!, builder.Env
 
 builder.Services.AddAuthorization();
 
+// Configure health checks
+const string SelfHealthCheckDescription = "Application is running";
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy(SelfHealthCheckDescription))
+    .AddUrlGroup(
+        new Uri($"{idsConfig!.Url}/.well-known/openid-configuration"),
+        name: "identity_server",
+        failureStatus: HealthStatus.Degraded,
+        timeout: TimeSpan.FromSeconds(5))
+    .AddUrlGroup(
+        new Uri(externalApisConfig!.SubmissionApi.BaseUrl),
+        name: "submission_api",
+        failureStatus: HealthStatus.Degraded,
+        timeout: TimeSpan.FromSeconds(5));
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMcpServer()
     .WithToolsFromAssembly()
@@ -45,6 +63,56 @@ var app = builder.Build();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Map health check endpoints
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description,
+                duration = e.Value.Duration.TotalMilliseconds
+            }),
+            totalDuration = report.TotalDuration.TotalMilliseconds
+        });
+        await context.Response.WriteAsync(result);
+    }
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready") || check.Name == "self",
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString()
+        });
+        await context.Response.WriteAsync(result);
+    }
+});
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = check => check.Name == "self",
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString()
+        });
+        await context.Response.WriteAsync(result);
+    }
+});
 
 app.MapMcp().RequireAuthorization();
 

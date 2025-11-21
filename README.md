@@ -46,9 +46,9 @@ A Model Context Protocol (MCP) server and client implementation for AmLink submi
    ```
 
 5. **Access the applications**
-   - **Client (HTTPS)**: https://localhost:5001
-   - **Client (HTTP)**: http://localhost:5000
-   - **Server (HTTPS)**: https://localhost:8443
+   - **Client (HTTPS)**: <https://localhost:5001>
+   - **Client (HTTP)**: <http://localhost:5000>
+   - **Server (HTTPS)**: <https://localhost:8443>
 
 ## 🔄 CI/CD & Deployment
 
@@ -85,11 +85,11 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 📖 **Full deployment guide**: See [`docs/registry-deployment.md`](docs/registry-deployment.md)
-   - **Server (HTTP)**: http://localhost:8080
+- **Server (HTTP)**: <http://localhost:8080>
 
 ## 📁 Project Structure
 
-```
+```text
 ├── src/
 │   ├── amlink-submissions-mcp-client/    # Web client application
 │   └── amlink-submissions-mcp-server/    # MCP server implementation
@@ -187,7 +187,7 @@ docker-compose up -d --build
 
 ## 🚢 Deployment
 
-### Production Deployment
+### Docker Compose Production
 
 1. **Set production environment variables**
 2. **Deploy with production configuration**
@@ -206,8 +206,72 @@ This project includes GitHub Actions workflows for:
 ## 📝 API Documentation
 
 - **MCP Server Tools**: Available at `/tools` endpoint
-- **Health Checks**: Available at `/health` endpoint
+- **Health Checks**: Available at `/health`, `/health/ready`, `/health/live` endpoints
 - **OpenAPI/Swagger**: Available in development mode
+
+### Health Check Endpoints
+
+Both the server and client applications provide health check endpoints for monitoring and orchestration:
+
+#### `/health` - Comprehensive Health Status
+Returns detailed health information including all dependency checks:
+```json
+{
+  "status": "Healthy",
+  "checks": [
+    {
+      "name": "self",
+      "status": "Healthy",
+      "description": "Application is running",
+      "duration": 0.5
+    },
+    {
+      "name": "identity_server",
+      "status": "Healthy",
+      "description": null,
+      "duration": 125.3
+    },
+    {
+      "name": "submission_api",
+      "status": "Healthy",
+      "description": null,
+      "duration": 98.7
+    }
+  ],
+  "totalDuration": 224.5
+}
+```
+
+#### `/health/ready` - Readiness Probe
+Returns simple status indicating if the application is ready to accept traffic:
+```json
+{
+  "status": "Healthy"
+}
+```
+
+#### `/health/live` - Liveness Probe
+Returns simple status indicating if the application is running:
+```json
+{
+  "status": "Healthy"
+}
+```
+
+**Health Status Values:**
+- `Healthy` - All checks passed
+- `Degraded` - Some non-critical checks failed (e.g., external dependencies)
+- `Unhealthy` - Critical checks failed
+
+**Server Health Checks:**
+- Self check - Application is running
+- Identity Server - OAuth provider availability
+- Submission API - External API availability
+
+**Client Health Checks:**
+- Self check - Application is running
+- MCP Server - Backend server availability
+- Identity Server - OAuth provider availability
 
 ## 🤝 Contributing
 
