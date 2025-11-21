@@ -23,7 +23,9 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '10.0.x'
+        dotnet-version: |
+          9.0.x
+          10.0.x
 
     - name: Restore dependencies
       run: dotnet restore
@@ -41,20 +43,23 @@ jobs:
           echo "Test projects found, running tests..."
           dotnet test --no-build --configuration Release \
             --collect:"XPlat Code Coverage" \
-            --results-directory ./coverage \
-            --logger trx --results-directory ./test-results
+            --results-directory ./test-results \
+            --logger "trx;LogFileName=test-results.trx"
+          # Move coverage files to separate directory
+          mkdir -p ./coverage
+          find ./test-results -name "*.coverage" -exec mv {} ./coverage/ \; 2>/dev/null || true
+          find ./test-results -name "coverage.cobertura.xml" -exec mv {} ./coverage/ \; 2>/dev/null || true
         else
-          echo "No test projects found, creating empty results"
+          echo "No test projects found, skipping test reporting"
           mkdir -p ./test-results ./coverage
-          echo "No tests to run" > ./test-results/no-tests.txt
         fi
 
     - name: Publish test results
       uses: dorny/test-reporter@v1
-      if: always()
+      if: always() && hashFiles('./test-results/test-results.trx') != ''
       with:
         name: .NET Tests
-        path: './test-results/*.trx'
+        path: './test-results/test-results.trx'
         reporter: dotnet-trx
 
     - name: Docker Build Test
@@ -63,9 +68,12 @@ jobs:
         docker build -t test-client ./src/amlink-submissions-mcp-client/
 
     - name: Validate Docker Compose
+      env:
+        IDENTITY_SERVER_CLIENT_SECRET: "validation-dummy-secret"
+        OPENAI_API_KEY: "validation-dummy-key"
       run: |
-        docker-compose -f docker-compose.yml config
-        docker-compose -f docker-compose.yml -f docker-compose.prod.yml config
+        docker compose -f docker-compose.yml config
+        docker compose -f docker-compose.yml -f docker-compose.prod.yml config
 
   lint:
     runs-on: ubuntu-latest
@@ -84,6 +92,8 @@ jobs:
         VALIDATE_YAML: true
         VALIDATE_JSON: true
         VALIDATE_MARKDOWN: true
+        # Run only on changed files
+        VALIDATE_ALL_CODEBASE: false
 
     - name: Scan for secrets
       uses: trufflesecurity/trufflehog@main

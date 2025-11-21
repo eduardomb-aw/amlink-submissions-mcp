@@ -40,15 +40,6 @@ using IChatClient samplingClient = openAIClient.AsIChatClient()
     .AsBuilder()
     .Build();
 
-// Display startup information
-Console.WriteLine("Protected MCP Client");
-Console.WriteLine($"Connecting to MCP server at {mcpConfig.Url}...");
-Console.WriteLine($"Using Identity Server: {idsConfig.Url}");
-Console.WriteLine($"Client ID: {idsConfig.ClientId}");
-Console.WriteLine($"Grant Type: {idsConfig.GrantType}");
-Console.WriteLine($"Will test Submission API integration secured by Identity Server 4");
-Console.WriteLine("Press Ctrl+C to stop the server");
-
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddHttpClient(); // Add HTTP client factory
@@ -71,7 +62,6 @@ var keyRingPath = builder.Configuration.GetValue<string>("DataProtection:KeyRing
 
 // Ensure the key ring directory exists
 Directory.CreateDirectory(keyRingPath);
-Console.WriteLine($"Data protection keys will be stored in: {keyRingPath}");
 
 builder.Services.AddDataProtection()
     .SetApplicationName("amlink-mcp-client")
@@ -108,6 +98,17 @@ builder.Services.AddSingleton(mcpConfig!);
 builder.Services.AddSingleton(idsConfig!);
 
 var app = builder.Build();
+
+// Display startup information
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("Protected MCP Client");
+logger.LogInformation("Connecting to MCP server at {McpServerUrl}", mcpConfig.Url);
+logger.LogInformation("Using Identity Server: {IdentityServerUrl}", idsConfig.Url);
+logger.LogInformation("Client ID: {ClientId}", idsConfig.ClientId);
+logger.LogInformation("Grant Type: {GrantType}", idsConfig.GrantType);
+logger.LogInformation("Will test Submission API integration secured by Identity Server 4");
+logger.LogInformation("Press Ctrl+C to stop the client");
+logger.LogInformation("Data protection keys will be stored in: {KeyRingPath}", keyRingPath);
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
