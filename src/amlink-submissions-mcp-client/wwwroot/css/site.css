@@ -150,3 +150,38 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
   color: #212529;
 }
+
+/* Fix navbar collapse and responsive behavior */
+.navbar-collapse {
+  flex-grow: 1;
+  align-items: center;
+}
+
+.navbar-toggler {
+  border: 1px solid rgba(0,0,0,.1);
+}
+
+.navbar-toggler:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.me-auto {
+  margin-right: auto !important;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem !important;
+}
+
+.mb-lg-0 {
+  margin-bottom: 0 !important;
+}
+
+@media (min-width: 576px) {
+  .navbar-expand-sm .navbar-collapse {
+    display: flex !important;
+  }
+  .navbar-expand-sm .navbar-toggler {
+    display: none;
+  }
+}

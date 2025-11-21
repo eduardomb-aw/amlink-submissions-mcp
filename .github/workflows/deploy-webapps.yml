@@ -181,6 +181,7 @@ jobs:
             "McpServer__Url=${SERVER_URL}/" \
             "McpServer__BrowserUrl=${SERVER_URL}/" \
             "DataProtection__KeyRingPath=/home/site/wwwroot/dp-keys" \
+            "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" \
             "DetailedErrors=true"
         
         echo "✅ Client app environment variables configured"
@@ -209,6 +210,7 @@ jobs:
             "ExternalApis__SubmissionApi__RequiredScope=amlink-submission-api" \
             "ExternalApis__SubmissionApi__UserAgent=mcp-submission-client" \
             "ExternalApis__SubmissionApi__Version=1.0" \
+            "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" \
             "DetailedErrors=true"
         
         echo "✅ Server app environment variables configured"
