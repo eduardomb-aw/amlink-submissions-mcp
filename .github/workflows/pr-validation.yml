@@ -68,6 +68,9 @@ jobs:
         docker build -t test-client ./src/amlink-submissions-mcp-client/
 
     - name: Validate Docker Compose
+      env:
+        IDENTITY_SERVER_CLIENT_SECRET: "validation-dummy-secret"
+        OPENAI_API_KEY: "validation-dummy-key"
       run: |
         docker compose -f docker-compose.yml config
         docker compose -f docker-compose.yml -f docker-compose.prod.yml config
