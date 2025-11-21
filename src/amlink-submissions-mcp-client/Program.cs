@@ -107,7 +107,7 @@ logger.LogInformation("Using Identity Server: {IdentityServerUrl}", idsConfig.Ur
 logger.LogInformation("Client ID: {ClientId}", idsConfig.ClientId);
 logger.LogInformation("Grant Type: {GrantType}", idsConfig.GrantType);
 logger.LogInformation("Will test Submission API integration secured by Identity Server 4");
-logger.LogInformation("Press Ctrl+C to stop the server");
+logger.LogInformation("Press Ctrl+C to stop the client");
 logger.LogInformation("Data protection keys will be stored in: {KeyRingPath}", keyRingPath);
 
 // Configure the HTTP request pipeline.
