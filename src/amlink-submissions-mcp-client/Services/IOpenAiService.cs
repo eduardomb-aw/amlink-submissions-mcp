@@ -121,12 +121,7 @@ public class OpenAiService : IOpenAiService
                 {
                     name = tool.Name,
                     description = tool.Description,
-                    parameters = new
-                    {
-                        type = "object",
-                        properties = new Dictionary<string, object>(),
-                        required = new List<string>()
-                    }
+                    parameters = GetToolParametersSchema(tool)
                 }
             }).ToArray();
         }
@@ -135,6 +130,39 @@ public class OpenAiService : IOpenAiService
             _logger.LogWarning(ex, "Failed to retrieve MCP tools, continuing without them");
             return Array.Empty<object>();
         }
+    }
+
+    private object GetToolParametersSchema(ModelContextProtocol.Client.McpClientTool tool)
+    {
+        // For common submission-related tools, provide explicit schemas
+        return tool.Name?.ToLowerInvariant() switch
+        {
+            "get_submission" => new
+            {
+                type = "object",
+                properties = new Dictionary<string, object>
+                {
+                    ["submissionId"] = new { type = "string", description = "The submission ID to retrieve details for" }
+                },
+                required = new[] { "submissionId" }
+            },
+            "search_submissions" => new
+            {
+                type = "object",
+                properties = new Dictionary<string, object>
+                {
+                    ["query"] = new { type = "string", description = "Search query for submissions" },
+                    ["limit"] = new { type = "integer", description = "Maximum number of results to return" }
+                },
+                required = new[] { "query" }
+            },
+            _ => new
+            {
+                type = "object",
+                properties = new Dictionary<string, object>(),
+                required = Array.Empty<string>()
+            }
+        };
     }
 
     private async Task<string> HandleToolCallsAsync(string originalMessage, JsonElement responseMessage, CancellationToken cancellationToken)
@@ -153,10 +181,33 @@ public class OpenAiService : IOpenAiService
                 if (string.IsNullOrEmpty(functionName) || string.IsNullOrEmpty(argumentsJson))
                     continue;
 
-                _logger.LogInformation("Executing MCP tool: {ToolName}", functionName);
+                _logger.LogInformation("Executing MCP tool: {ToolName} with arguments: {Arguments}", functionName, argumentsJson);
 
-                // Parse arguments
-                var arguments = JsonSerializer.Deserialize<Dictionary<string, object?>>(argumentsJson);
+                // Parse arguments - handle both simple and nested JSON structures
+                Dictionary<string, object?> arguments;
+                try
+                {
+                    using var document = JsonDocument.Parse(argumentsJson);
+                    arguments = new Dictionary<string, object?>();
+                    
+                    foreach (var property in document.RootElement.EnumerateObject())
+                    {
+                        arguments[property.Name] = property.Value.ValueKind switch
+                        {
+                            JsonValueKind.String => property.Value.GetString(),
+                            JsonValueKind.Number => property.Value.GetDecimal(),
+                            JsonValueKind.True => true,
+                            JsonValueKind.False => false,
+                            JsonValueKind.Null => null,
+                            _ => property.Value.GetRawText()
+                        };
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogError(ex, "Failed to parse tool arguments: {Arguments}", argumentsJson);
+                    continue;
+                }
 
                 // Call the MCP tool
                 var result = await _mcpService.InvokeToolAsync(functionName, arguments, cancellationToken);

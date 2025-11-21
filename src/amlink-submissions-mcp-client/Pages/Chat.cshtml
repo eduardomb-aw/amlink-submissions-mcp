@@ -130,15 +130,62 @@ document.addEventListener('DOMContentLoaded', function() {
             hour12: false 
         });
         
+        // Process content for markdown if it's an assistant message
+        const processedContent = isUser ? escapeHtml(content) : parseMarkdown(content);
+        
         messageDiv.innerHTML = `
             <div class="message-content">
-                <div class="message-text">${content}</div>
+                <div class="message-text">${processedContent}</div>
                 <div class="message-time">${timeString}</div>
             </div>
         `;
         
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function parseMarkdown(text) {
+        // Basic markdown parsing for common patterns
+        return text
+            // Code blocks (```code```)
+            .replace(/```(\w+)?\n?([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>')
+            // Inline code (`code`)
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            // Bold (**text** or __text__)
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/__(.*?)__/g, '<strong>$1</strong>')
+            // Italic (*text* or _text_)
+            .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+            .replace(/_([^_]+)_/g, '<em>$1</em>')
+            // Headers (# ## ###)
+            .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+            .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+            .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+            // Lists (* item or - item)
+            .replace(/^\* (.+)$/gm, '<li>$1</li>')
+            .replace(/^- (.+)$/gm, '<li>$1</li>')
+            // Wrap consecutive list items in ul tags
+            .replace(/(<li>.*<\/li>)/gs, function(match) {
+                return '<ul>' + match + '</ul>';
+            })
+            // Links [text](url)
+            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+            // Line breaks
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>')
+            // Wrap in paragraphs if not already wrapped
+            .replace(/^(?!<[h1-6ul]|<pre|<code)/gm, '<p>')
+            .replace(/(?<!<\/[h1-6]>|<\/ul>|<\/pre>|<\/code>)$/gm, '</p>')
+            // Clean up empty paragraphs and fix nested paragraph issues
+            .replace(/<p><\/p>/g, '')
+            .replace(/<p>(<[h1-6ul])/g, '$1')
+            .replace(/(<\/[h1-6]>|<\/ul>|<\/pre>)<\/p>/g, '$1');
     }
     
     // Focus input on page load
@@ -332,6 +379,91 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .chat-messages::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
+}
+
+/* Markdown styling in chat messages */
+.message-text h1, .message-text h2, .message-text h3 {
+    margin: 0.5rem 0;
+    font-weight: 600;
+}
+
+.message-text h1 { font-size: 1.5rem; }
+.message-text h2 { font-size: 1.3rem; }
+.message-text h3 { font-size: 1.1rem; }
+
+.message-text p {
+    margin: 0.5rem 0;
+    line-height: 1.6;
+}
+
+.message-text ul {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.message-text li {
+    margin: 0.25rem 0;
+}
+
+.message-text strong {
+    font-weight: 600;
+}
+
+.message-text em {
+    font-style: italic;
+}
+
+.message-text a {
+    color: #0078d4;
+    text-decoration: underline;
+}
+
+.user-message .message-text a {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+.message-text code {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.875em;
+}
+
+.user-message .message-text code {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.message-text pre {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+    border-left: 3px solid #0078d4;
+}
+
+.user-message .message-text pre {
+    background: rgba(255, 255, 255, 0.1);
+    border-left-color: rgba(255, 255, 255, 0.5);
+}
+
+.message-text pre code {
+    background: transparent;
+    padding: 0;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.875em;
+    line-height: 1.4;
+}
+
+/* Ensure proper spacing for consecutive elements */
+.message-text > *:first-child {
+    margin-top: 0;
+}
+
+.message-text > *:last-child {
+    margin-bottom: 0;
 }
 
 /* Responsive design */
