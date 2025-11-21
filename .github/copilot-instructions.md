@@ -322,7 +322,7 @@ The main branch is protected with the following requirements:
 - **Direct Commits**: All changes to main must go through Pull Requests
 - **Force Push**: Force pushes to main are blocked
 - **Branch Deletion**: Main branch cannot be deleted
-- **Admin Bypass**: Repository admins must follow the same rules (enforce_admins: false for flexibility)
+- **Admin Bypass**: Repository admins can bypass branch protection rules (enforce_admins: false for flexibility), but are expected to follow the same process unless an exception is required.
 
 ### Branch Protection Configuration
 ```bash
