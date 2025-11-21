@@ -125,7 +125,7 @@ else
 
 // Configure HTTPS redirection based on environment
 // In Azure Web Apps, HTTPS termination happens at the load balancer
-var useHttpsRedirection = app.Environment.IsDevelopment() && 
+var useHttpsRedirection = app.Environment.IsDevelopment() &&
                          app.Configuration.GetValue<string>("ASPNETCORE_URLS")?.Contains("https") == true;
 
 if (useHttpsRedirection)
@@ -141,7 +141,7 @@ app.UseStaticFiles(new StaticFileOptions
         // Set cache headers for static files
         const int durationInSeconds = 60 * 60 * 24 * 30; // 30 days
         ctx.Context.Response.Headers.Append("Cache-Control", $"public,max-age={durationInSeconds}");
-        
+
         // Ensure proper content types for common files
         var extension = Path.GetExtension(ctx.File.Name).ToLowerInvariant();
         switch (extension)
@@ -174,7 +174,7 @@ app.MapGet("/oauth/callback", async (HttpContext context, ITokenService tokenSer
     var code = query["code"].FirstOrDefault();
     var state = query["state"].FirstOrDefault();
     var error = query["error"].FirstOrDefault();
-    
+
     if (!string.IsNullOrEmpty(error))
     {
         var errorDescription = query["error_description"].FirstOrDefault();
@@ -190,7 +190,7 @@ app.MapGet("/oauth/callback", async (HttpContext context, ITokenService tokenSer
             </html>
         ", "text/html");
     }
-    
+
     if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
     {
         return Results.Content(@"
@@ -204,9 +204,9 @@ app.MapGet("/oauth/callback", async (HttpContext context, ITokenService tokenSer
             </html>
         ", "text/html");
     }
-    
+
     var success = await tokenService.CompleteAuthenticationAsync(code, state);
-    
+
     if (success)
     {
         return Results.Content(@"
@@ -310,8 +310,8 @@ public class OAuthStateService : IOAuthStateService
 public class OAuthRedirectRequiredException : Exception
 {
     public string AuthorizationUrl { get; }
-    
-    public OAuthRedirectRequiredException(string authorizationUrl) 
+
+    public OAuthRedirectRequiredException(string authorizationUrl)
         : base($"OAuth authentication required. Redirect user to: {authorizationUrl}")
     {
         AuthorizationUrl = authorizationUrl;

@@ -20,7 +20,7 @@ public class TokenService : ITokenService
     private readonly IdentityServerConfiguration _idsConfig;
     private readonly HttpClient _httpClient;
     private readonly ILogger<TokenService> _logger;
-    
+
     private string? _accessToken;
     private DateTime _tokenExpiry = DateTime.MinValue;
     private readonly ConcurrentDictionary<string, string> _codeVerifiers = new();
@@ -49,10 +49,10 @@ public class TokenService : ITokenService
             var state = Guid.NewGuid().ToString();
             var codeVerifier = GenerateCodeVerifier();
             var codeChallenge = GenerateCodeChallenge(codeVerifier);
-            
+
             // Store code verifier for later use
             _codeVerifiers[state] = codeVerifier;
-            
+
             var parameters = new Dictionary<string, string>
             {
                 ["client_id"] = _idsConfig.ClientId,
@@ -64,11 +64,11 @@ public class TokenService : ITokenService
                 ["code_challenge_method"] = "S256"
             };
 
-            var queryString = string.Join("&", 
+            var queryString = string.Join("&",
                 parameters.Select(kvp => $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"));
-            
+
             var authUrl = $"{_idsConfig.Url}/connect/authorize?{queryString}";
-            
+
             _logger.LogInformation("Generated authorization URL for state: {State}", state);
             return authUrl;
         }
@@ -90,10 +90,10 @@ public class TokenService : ITokenService
             }
 
             var tokenResponse = await ExchangeCodeForTokenAsync(authorizationCode, codeVerifier, cancellationToken);
-            
+
             _accessToken = tokenResponse.AccessToken;
             _tokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
-            
+
             _logger.LogInformation("Authentication completed successfully. Token expires at: {Expiry}", _tokenExpiry);
             return true;
         }
@@ -126,7 +126,7 @@ public class TokenService : ITokenService
 
         var content = new FormUrlEncodedContent(parameters);
         var response = await _httpClient.PostAsync($"{_idsConfig.Url}/connect/token", content, cancellationToken);
-        
+
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -135,9 +135,9 @@ public class TokenService : ITokenService
         }
 
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
-        var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(json, new JsonSerializerOptions 
-        { 
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower 
+        var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(json, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
         });
 
         return tokenResponse ?? throw new InvalidOperationException("Invalid token response");

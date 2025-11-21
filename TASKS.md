@@ -1,6 +1,6 @@
 # AmLink Submissions MCP - Implementation Tasks
 
-This document outlines the tasks to implement improvements identified in [POTENTIAL-IMPROVEMENTS.md](docs/POTENTIAL-IMPROVEMENTS.md) from PR #3.
+This document outlines the tasks to implement improvements identified in [temp_potential-improvements.md](docs/temp_potential-improvements.md) from historical analysis.
 
 ## Task Organization
 
@@ -663,7 +663,7 @@ Recommended implementation order for optimal workflow:
 
 ## Related Documentation
 
-- [POTENTIAL-IMPROVEMENTS.md](docs/POTENTIAL-IMPROVEMENTS.md) - Detailed analysis of each improvement
+- [temp_potential-improvements.md](docs/temp_potential-improvements.md) - Detailed analysis of each improvement
 - [Issue #1](https://github.com/eduardomb-aw/amlink-submissions-mcp/issues/1) - Setup Production Deployment
 - [Issue #2](https://github.com/eduardomb-aw/amlink-submissions-mcp/issues/2) - Add Comprehensive Test Suite
 - [Issue #4](https://github.com/eduardomb-aw/amlink-submissions-mcp/issues/4) - Set up Copilot instructions
@@ -672,4 +672,4 @@ Recommended implementation order for optimal workflow:
 
 *Document created: 2025-11-20*  
 *Based on: PR #3 - Identify Potential Repository Issues*  
-*Source: [POTENTIAL-IMPROVEMENTS.md](docs/POTENTIAL-IMPROVEMENTS.md)*
+*Source: [temp_potential-improvements.md](docs/temp_potential-improvements.md)*
