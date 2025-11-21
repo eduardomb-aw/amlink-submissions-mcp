@@ -59,6 +59,12 @@ builder.Services.AddHttpClient("mcp-client", client =>
     client.Timeout = TimeSpan.FromMinutes(5); // Adjust timeout as needed
 });
 
+// Configure HTTP client for OpenAI
+builder.Services.AddHttpClient("openai", client =>
+{
+    client.Timeout = TimeSpan.FromMinutes(2);
+});
+
 // Configure data protection for local development
 if (builder.Environment.IsDevelopment())
 {
@@ -122,6 +128,7 @@ builder.Services.AddAntiforgery(options =>
 builder.Services.AddSingleton<IOAuthStateService, OAuthStateService>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddScoped<IMcpService, McpService>();
+builder.Services.AddScoped<IOpenAiService, OpenAiService>();
 builder.Services.AddSingleton(mcpConfig!);
 builder.Services.AddSingleton(idsConfig!);
 

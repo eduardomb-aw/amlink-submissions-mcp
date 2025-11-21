@@ -1,0 +1,359 @@
+@page
+@using AmLink.Submissions.Mcp.Client.Pages
+@model ChatModel
+@{
+    ViewData["Title"] = "AI Chat";
+}
+
+<div class="chat-container">
+    <div class="chat-header">
+        <h1 class="chat-title">AI Assistant</h1>
+    </div>
+    
+    <div class="chat-messages" id="chatMessages">
+        @if (Model.Messages.Any())
+        {
+            @foreach (var message in Model.Messages)
+            {
+                <div class="message @(message.IsUser ? "user-message" : "assistant-message")">
+                    <div class="message-content">
+                        <div class="message-text">@Html.Raw(message.Content)</div>
+                        <div class="message-time">@message.Timestamp.ToString("HH:mm")</div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+    
+    <div class="chat-input-container">
+        <form method="post" asp-page-handler="SendMessage" id="chatForm" class="chat-form">
+            <div class="input-wrapper">
+                <textarea name="message" 
+                         id="messageInput" 
+                         class="chat-input" 
+                         placeholder="Ask me anything..." 
+                         rows="1"
+                         required></textarea>
+                <button type="submit" class="send-button" id="sendButton">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M2.87 1.86a.5.5 0 0 1 .67-.02L14.5 8a.5.5 0 0 1 0 .86L3.54 14.1a.5.5 0 0 1-.67-.02.5.5 0 0 1-.15-.52L4.5 8 2.72 2.38a.5.5 0 0 1 .15-.52z"/>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger mt-3" role="alert">
+        @Model.ErrorMessage
+    </div>
+}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageInput = document.getElementById('messageInput');
+    const chatForm = document.getElementById('chatForm');
+    const chatMessages = document.getElementById('chatMessages');
+    const sendButton = document.getElementById('sendButton');
+    
+    // Auto-resize textarea
+    messageInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+    
+    // Handle form submission
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const message = messageInput.value.trim();
+        if (!message) return;
+        
+        // Disable input and button
+        messageInput.disabled = true;
+        sendButton.disabled = true;
+        sendButton.innerHTML = '<div class="spinner"></div>';
+        
+        // Add user message to chat immediately
+        addMessage(message, true);
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
+        
+        // Submit form
+        const formData = new FormData();
+        formData.append('message', message);
+        
+        fetch(window.location.href + '?handler=SendMessage', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                addMessage(data.response, false);
+            } else {
+                addMessage('Sorry, I encountered an error: ' + data.error, false);
+            }
+        })
+        .catch(error => {
+            addMessage('Sorry, I encountered a connection error.', false);
+        })
+        .finally(() => {
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            sendButton.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2.87 1.86a.5.5 0 0 1 .67-.02L14.5 8a.5.5 0 0 1 0 .86L3.54 14.1a.5.5 0 0 1-.67-.02.5.5 0 0 1-.15-.52L4.5 8 2.72 2.38a.5.5 0 0 1 .15-.52z"/></svg>';
+            messageInput.focus();
+        });
+    });
+    
+    // Handle Enter key (with Shift+Enter for new line)
+    messageInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            chatForm.dispatchEvent(new Event('submit'));
+        }
+    });
+    
+    function addMessage(content, isUser) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
+        
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+        });
+        
+        messageDiv.innerHTML = `
+            <div class="message-content">
+                <div class="message-text">${content}</div>
+                <div class="message-time">${timeString}</div>
+            </div>
+        `;
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    // Focus input on page load
+    messageInput.focus();
+});
+</script>
+
+<style>
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px);
+    max-width: 800px;
+    margin: 0 auto;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    background: white;
+}
+
+.chat-header {
+    padding: 1rem;
+    border-bottom: 1px solid #e1e5e9;
+    background: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+}
+
+.chat-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #323130;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.message {
+    display: flex;
+    margin-bottom: 1rem;
+}
+
+.user-message {
+    justify-content: flex-end;
+}
+
+.assistant-message {
+    justify-content: flex-start;
+}
+
+.message-content {
+    max-width: 70%;
+    padding: 0.75rem 1rem;
+    border-radius: 18px;
+    position: relative;
+}
+
+.user-message .message-content {
+    background: #0078d4;
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.assistant-message .message-content {
+    background: #f3f2f1;
+    color: #323130;
+    border-bottom-left-radius: 4px;
+}
+
+.message-text {
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+.message-time {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-top: 0.25rem;
+    text-align: right;
+}
+
+.user-message .message-time {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.assistant-message .message-time {
+    color: #605e5c;
+}
+
+.chat-input-container {
+    padding: 1rem;
+    border-top: 1px solid #e1e5e9;
+    background: white;
+    border-radius: 0 0 8px 8px;
+}
+
+.chat-form {
+    width: 100%;
+}
+
+.input-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border: 2px solid transparent;
+    border-radius: 20px;
+    background: #f3f2f1;
+    transition: border-color 0.2s ease;
+}
+
+.input-wrapper:focus-within {
+    border-color: #0078d4;
+    background: white;
+}
+
+.chat-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    resize: none;
+    font-size: 1rem;
+    line-height: 1.4;
+    padding: 0.5rem;
+    max-height: 120px;
+    overflow-y: auto;
+    outline: none;
+    font-family: inherit;
+}
+
+.chat-input::placeholder {
+    color: #605e5c;
+}
+
+.send-button {
+    background: #0078d4;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.send-button:hover:not(:disabled) {
+    background: #106ebe;
+}
+
+.send-button:disabled {
+    background: #a19f9d;
+    cursor: not-allowed;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Scrollbar styling */
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Responsive design */
+@@media (max-width: 768px) {
+    .chat-container {
+        height: calc(100vh - 80px);
+        margin: 0;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+    
+    .message-content {
+        max-width: 85%;
+    }
+    
+    .chat-header {
+        border-radius: 0;
+    }
+    
+    .chat-input-container {
+        border-radius: 0;
+    }
+}
+</style>
