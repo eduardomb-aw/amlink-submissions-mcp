@@ -308,6 +308,31 @@ docker-compose down && docker-compose up -d
 - [ ] Port mappings don't conflict with host services
 - [ ] OAuth redirect URIs match Identity Server configuration exactly
 
+## Branch Protection Rules
+
+The main branch is protected with the following requirements:
+
+### Required Checks
+- **Status Checks**: Both "Validate PR" and "Lint & Security" workflows must pass
+- **PR Reviews**: At least 1 approving review required
+- **Conversation Resolution**: All conversations must be resolved before merge
+- **Stale Review Dismissal**: Reviews are dismissed when new commits are pushed
+
+### Prohibited Actions
+- **Direct Commits**: All changes to main must go through Pull Requests
+- **Force Push**: Force pushes to main are blocked
+- **Branch Deletion**: Main branch cannot be deleted
+- **Admin Bypass**: Repository admins must follow the same rules (enforce_admins: false for flexibility)
+
+### Branch Protection Configuration
+```bash
+# View current protection rules
+gh api repos/eduardomb-aw/amlink-submissions-mcp/branches/main/protection
+
+# Update protection rules (use with caution)
+gh api repos/eduardomb-aw/amlink-submissions-mcp/branches/main/protection -X PUT --input protection.json
+```
+
 ## Best Practices
 
 1. **Minimal Changes**: Make the smallest possible changes to achieve the goal
@@ -317,3 +342,30 @@ docker-compose down && docker-compose up -d
 5. **Code Review**: Follow the repository's PR review process
 6. **Dependencies**: Only add dependencies when absolutely necessary
 7. **Docker**: Use Docker Compose for local development and testing
+8. **Branch Protection**: All main branch changes must go through PRs with required approvals and passing checks
+9. **Workflow Validation**: Test workflow changes locally and monitor runs immediately after pushing
+10. **Incremental Fixes**: When workflows fail, fix one issue at a time rather than making multiple changes simultaneously
+11. **Learning Documentation**: Update instructions based on troubleshooting experiences to prevent future issues
+
+## Continuous Improvement
+
+### Recording New Instructions
+When encountering and resolving new issues:
+
+1. **Document the Problem**: Record the specific error message, failure pattern, or issue encountered
+2. **Document the Solution**: Capture the exact steps taken to resolve the issue
+3. **Add to Troubleshooting**: Update the relevant troubleshooting section with the new pattern
+4. **Update Best Practices**: If the issue reveals a process improvement, add it to the best practices
+5. **Commit Knowledge**: Always commit instruction updates to preserve institutional knowledge
+
+### Pattern Recognition
+- Look for recurring issues across different PRs or workflows
+- Identify root causes rather than just symptoms
+- Create systematic solutions that prevent issue recurrence
+- Build comprehensive troubleshooting patterns that others can follow
+
+### Knowledge Preservation
+- Each resolved issue is a learning opportunity for the entire team
+- Detailed troubleshooting patterns reduce future debugging time
+- Well-documented solutions enable faster onboarding of new developers
+- Institutional knowledge prevents the same issues from happening repeatedly
