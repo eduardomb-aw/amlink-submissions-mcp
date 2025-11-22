@@ -1,7 +1,7 @@
+using System.Net.Http.Headers;
 using AmLink.Submissions.Mcp.Client.Configuration;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
-using System.Net.Http.Headers;
 
 namespace AmLink.Submissions.Mcp.Client.Services;
 

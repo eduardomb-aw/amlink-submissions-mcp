@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Text.Json;
 using AmLink.Submissions.Mcp.Client.Configuration;
 using AmLink.Submissions.Mcp.Client.Services;
 using System.Collections.Concurrent;
@@ -7,8 +9,9 @@ using Microsoft.Extensions.AI;
 using OpenAI;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using System.Text.Json;
+using OpenAI;
 
 var builder = WebApplication.CreateBuilder(args);
 
