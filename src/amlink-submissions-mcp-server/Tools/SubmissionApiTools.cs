@@ -57,7 +57,7 @@ public sealed class SubmissionApiTools
 
         var client = _httpClientFactory.CreateClient("SubmissionApi");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", submissionApiToken);
-        
+
         // Set User Agent from configuration
         if (!string.IsNullOrEmpty(_externalApisConfig.SubmissionApi.UserAgent))
         {
@@ -73,10 +73,10 @@ public sealed class SubmissionApiTools
         }
 
         var jsonContent = await response.Content.ReadAsStringAsync();
-        
+
         // Validate JSON by attempting to parse it
         JsonSerializer.Deserialize<JsonElement>(jsonContent);
-        
+
         return jsonContent;
     }
 
@@ -199,7 +199,7 @@ public sealed class SubmissionApiTools
         }
 
         var currentToken = authHeader["Bearer ".Length..];
-        
+
         // Validate that there's actually a token after "Bearer "
         if (string.IsNullOrWhiteSpace(currentToken))
         {

@@ -348,11 +348,11 @@ public class SubmissionApiToolsTests
     {
         // Arrange
         var submissionId = 12345L;
-        
+
         // Setup HttpContextAccessor to return null (simulating missing context)
         var mockHttpContextAccessorNoContext = new Mock<IHttpContextAccessor>();
         mockHttpContextAccessorNoContext.Setup(x => x.HttpContext).Returns((HttpContext?)null);
-        
+
         var mockLogger = new Mock<ILogger<SubmissionApiTools>>();
         var toolsWithNoContext = new SubmissionApiTools(
             _mockHttpClientFactory.Object,
@@ -366,7 +366,7 @@ public class SubmissionApiToolsTests
         // Act & Assert - Should throw McpException when HttpContext is missing
         var exception = await Assert.ThrowsAsync<McpException>(
             () => toolsWithNoContext.GetSubmission(submissionId));
-        
+
         Assert.Contains("HTTP context not available", exception.Message);
     }
 
@@ -380,20 +380,20 @@ public class SubmissionApiToolsTests
     {
         // Arrange
         var submissionId = 12345L;
-        
+
         // Setup HttpContext with invalid Authorization header
         var mockHttpContext = new Mock<HttpContext>();
         var mockRequest = new Mock<HttpRequest>();
         var mockHeaders = new HeaderDictionary();
-        
+
         // Add the authorization header to the dictionary
         mockHeaders["Authorization"] = authHeader;
         mockRequest.Setup(r => r.Headers).Returns(mockHeaders);
         mockHttpContext.Setup(c => c.Request).Returns(mockRequest.Object);
-        
+
         var mockHttpContextAccessorInvalid = new Mock<IHttpContextAccessor>();
         mockHttpContextAccessorInvalid.Setup(x => x.HttpContext).Returns(mockHttpContext.Object);
-        
+
         var mockLogger = new Mock<ILogger<SubmissionApiTools>>();
         var toolsWithInvalidAuth = new SubmissionApiTools(
             _mockHttpClientFactory.Object,
@@ -408,7 +408,7 @@ public class SubmissionApiToolsTests
         // The exception should be thrown from GetSubmissionApiTokenAsync before any HTTP call
         var exception = await Assert.ThrowsAsync<McpException>(
             () => toolsWithInvalidAuth.GetSubmission(submissionId));
-        
+
         Assert.Contains("No valid bearer token found in request", exception.Message);
     }
 
