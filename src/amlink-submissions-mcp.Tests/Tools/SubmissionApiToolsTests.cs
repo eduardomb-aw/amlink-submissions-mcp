@@ -384,11 +384,11 @@ public class SubmissionApiToolsTests
         // Setup HttpContext with invalid Authorization header
         var mockHttpContext = new Mock<HttpContext>();
         var mockRequest = new Mock<HttpRequest>();
-        var mockHeaders = new HeaderDictionary();
+        var mockHeaders = new Mock<IHeaderDictionary>();
 
-        // Add the authorization header to the dictionary
-        mockHeaders["Authorization"] = authHeader;
-        mockRequest.Setup(r => r.Headers).Returns(mockHeaders);
+        // Setup the mock to return the authorization header value
+        mockHeaders.Setup(h => h["Authorization"]).Returns(authHeader);
+        mockRequest.Setup(r => r.Headers).Returns(mockHeaders.Object);
         mockHttpContext.Setup(c => c.Request).Returns(mockRequest.Object);
 
         var mockHttpContextAccessorInvalid = new Mock<IHttpContextAccessor>();
