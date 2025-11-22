@@ -175,7 +175,7 @@ public async Task<string> CreateSubmission(
 **Current State:**
 
 - ✅ **COMPLETED**: All Console.WriteLine replaced with ILogger structured logging
-- ✅ **COMPLETED**: DisplayStartupInfo method now uses ILogger<Program>
+- ✅ **COMPLETED**: DisplayStartupInfo method now uses ILogger&lt;Program&gt;
 - ✅ **COMPLETED**: Semantic logging with structured properties
 - ✅ **COMPLETED**: Proper log levels (Information, Warning, Error)
 - ✅ **COMPLETED**: JWT validation errors properly logged
