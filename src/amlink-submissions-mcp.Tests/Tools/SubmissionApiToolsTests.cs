@@ -79,7 +79,7 @@ public class SubmissionApiToolsTests
         var mockHeaders = new Mock<IHeaderDictionary>();
 
         // Mock the Authorization header properly for ASP.NET Core
-        mockHeaders.Setup(h => h.Authorization).Returns(new Microsoft.Extensions.Primitives.StringValues("Bearer test-token"));
+        mockHeaders.Setup(h => h["Authorization"]).Returns(new Microsoft.Extensions.Primitives.StringValues("Bearer test-token"));
         mockRequest.Setup(r => r.Headers).Returns(mockHeaders.Object);
         mockHttpContext.Setup(c => c.Request).Returns(mockRequest.Object);
         _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(mockHttpContext.Object);
