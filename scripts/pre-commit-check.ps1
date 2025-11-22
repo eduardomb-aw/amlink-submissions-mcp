@@ -50,7 +50,35 @@ try {
         Write-Host "✅ Code formatting is clean!" -ForegroundColor Green
     }
 
-    # Step 2: Build solution
+    # Step 2: Check markdown linting
+    Write-Host "`n📄 Checking markdown formatting..." -ForegroundColor Yellow
+    
+    # Check if markdownlint-cli2 is available
+    $markdownFiles = Get-ChildItem -Path . -Filter "*.md" -Recurse | Where-Object { $_.FullName -notmatch "node_modules|\\bin\\|\\obj\\" }
+    
+    if ($markdownFiles.Count -gt 0) {
+        try {
+            # Use npx to run markdownlint-cli2 temporarily
+            $env:NODE_OPTIONS = "--no-warnings"
+            $markdownResult = npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**" 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "✅ Markdown formatting is clean!" -ForegroundColor Green
+            } else {
+                Write-Host "❌ Markdown linting issues detected!" -ForegroundColor Red
+                Write-Host $markdownResult -ForegroundColor Red
+                Write-Host "`n💡 Fix markdown issues manually or check the super-linter configuration" -ForegroundColor Blue
+                $success = $false
+            }
+        } catch {
+            Write-Host "⚠️  Markdown linting skipped (markdownlint-cli2 not available)" -ForegroundColor Yellow
+            Write-Host "💡 Install Node.js and run: npm install -g markdownlint-cli2" -ForegroundColor Blue
+        }
+    } else {
+        Write-Host "ℹ️  No markdown files found to lint" -ForegroundColor Blue
+    }
+
+    # Step 3: Build solution
     Write-Host "`n🔨 Building solution..." -ForegroundColor Yellow
     dotnet build --configuration Release --verbosity quiet
     
@@ -61,7 +89,7 @@ try {
         $success = $false
     }
 
-    # Step 3: Run tests (unless skipped)
+    # Step 4: Run tests (unless skipped)
     if (-not $SkipTests) {
         Write-Host "`n🧪 Running tests..." -ForegroundColor Yellow
         dotnet test --configuration Release --verbosity quiet --no-build

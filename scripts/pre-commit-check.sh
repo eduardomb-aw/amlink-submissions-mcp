@@ -62,7 +62,34 @@ else
     echo -e "${GREEN}✅ Code formatting is clean!${NC}"
 fi
 
-# Step 2: Build solution
+# Step 2: Check markdown linting
+echo -e "\n${YELLOW}📄 Checking markdown formatting...${NC}"
+
+# Find markdown files (excluding node_modules, bin, obj directories)
+markdown_files=$(find . -name "*.md" -not -path "./node_modules/*" -not -path "./*/bin/*" -not -path "./*/obj/*" 2>/dev/null || true)
+
+if [ -n "$markdown_files" ]; then
+    # Check if markdownlint-cli2 is available
+    if command -v npx >/dev/null 2>&1; then
+        # Use npx to run markdownlint-cli2 temporarily
+        export NODE_OPTIONS="--no-warnings"
+        if npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**" >/dev/null 2>&1; then
+            echo -e "${GREEN}✅ Markdown formatting is clean!${NC}"
+        else
+            echo -e "${RED}❌ Markdown linting issues detected!${NC}"
+            npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**" 2>&1 || true
+            echo -e "\n${BLUE}💡 Fix markdown issues manually or check the super-linter configuration${NC}"
+            success=false
+        fi
+    else
+        echo -e "${YELLOW}⚠️  Markdown linting skipped (Node.js/npx not available)${NC}"
+        echo -e "${BLUE}💡 Install Node.js to enable markdown linting${NC}"
+    fi
+else
+    echo -e "${BLUE}ℹ️  No markdown files found to lint${NC}"
+fi
+
+# Step 3: Build solution
 echo -e "\n${YELLOW}🔨 Building solution...${NC}"
 if dotnet build --configuration Release --verbosity quiet; then
     echo -e "${GREEN}✅ Build successful!${NC}"
@@ -71,7 +98,7 @@ else
     success=false
 fi
 
-# Step 3: Run tests (unless skipped)
+# Step 4: Run tests (unless skipped)
 if [ "$SKIP_TESTS" = false ]; then
     echo -e "\n${YELLOW}🧪 Running tests...${NC}"
     if dotnet test --configuration Release --verbosity quiet --no-build; then

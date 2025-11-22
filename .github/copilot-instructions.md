@@ -20,7 +20,7 @@ This is a Model Context Protocol (MCP) server and client implementation for AmLi
 
 ## Project Structure
 
-```
+```text
 ├── src/
 │   ├── amlink-submissions-mcp-client/    # Web client application (Razor Pages)
 │   │   ├── Configuration/                # Client configuration classes
@@ -216,23 +216,28 @@ public async Task MethodName_Scenario_ExpectedBehavior()
 
 #### Required Commands Before Every Push
 ```bash
-# 1. Check for formatting issues
+# 1. Check for code formatting issues
 dotnet format --verify-no-changes
 
-# 2. If issues found, fix them automatically
+# 2. Check for markdown linting issues (if Node.js available)
+npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**"
+
+# 3. If issues found, fix them automatically
 dotnet format
+# Fix markdown issues manually
 
-# 3. Verify formatting is now clean
+# 4. Verify formatting is now clean
 dotnet format --verify-no-changes
+npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**"
 
-# 4. If changes were made, commit them
+# 5. If changes were made, commit them
 git add -A
-git commit -m "Fix code formatting issues"
+git commit -m "Fix code formatting and markdown linting issues"
 
-# 5. Run tests to ensure formatting didn't break anything
+# 6. Run tests to ensure formatting didn't break anything
 dotnet test --configuration Release
 
-# 6. Now safe to push
+# 7. Now safe to push
 git push
 ```
 
@@ -241,6 +246,7 @@ git push
 - **Indentation**: Incorrect indentation levels, inconsistent spacing
 - **Line Endings**: Mixed CRLF/LF line endings across files
 - **Code Style**: Inconsistent brace placement, spacing around operators
+- **Markdown Issues**: Missing language tags in fenced code blocks, duplicate headings, line length violations
 
 #### IDE Configuration
 - Configure your IDE to show whitespace characters
@@ -249,10 +255,11 @@ git push
 - Enable EditorConfig support for consistent formatting rules
 
 #### Why This Matters
-- **PR Validation**: Formatting violations cause automatic PR failures
-- **Code Quality**: Consistent formatting improves code readability
+- **PR Validation**: Formatting and linting violations cause automatic PR failures
+- **Code Quality**: Consistent formatting improves code and documentation readability
 - **Team Efficiency**: Reduces time spent on formatting discussions in code reviews
-- **CI/CD Reliability**: Prevents build failures due to formatting issues
+- **CI/CD Reliability**: Prevents build failures due to formatting and linting issues
+- **Documentation Standards**: Ensures markdown documentation follows best practices
 
 ### General Guidelines
 - Use C# 12 features and .NET 10 idioms
@@ -476,7 +483,7 @@ Required environment variables (see `.env.example`):
 - `ExternalApis__SubmissionApi__Version` - API version
 - `OPENAI_API_KEY` - OpenAI API key for LLM integration (REQUIRED)
 
-#### MCP Client
+#### MCP Client Environment Variables
 - `ASPNETCORE_ENVIRONMENT` - Runtime environment (Development/Production)
 - `ASPNETCORE_URLS` - Binding URLs for the client (e.g., `http://+:80;https://+:443`)
 - `ASPNETCORE_Kestrel__Certificates__Default__Password` - SSL certificate password for HTTPS
@@ -597,6 +604,26 @@ git push
 ```
 **Common causes**: Mixed tabs/spaces, incorrect indentation, trailing whitespace, inconsistent line endings. Always run `dotnet format` locally before pushing changes.
 
+#### Issue: "Found errors in [markdownlint] linter!" or markdown linting failures
+**Solution**: Markdown linting violations detected by super-linter. Common issues and fixes:
+```bash
+# Check markdown issues locally
+npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**"
+
+# Common markdown fixes:
+# 1. Add language to fenced code blocks:
+# Wrong: ```
+# Right: ```bash
+
+# 2. Fix duplicate headings by making them more specific:
+# Wrong: ### Client (appears twice)
+# Right: ### MCP Client and ### HTTP Client
+
+# 3. Add blank lines around headings and code blocks
+# 4. Keep line lengths reasonable (preferably under 120 chars)
+```
+**Common causes**: Missing language tags in code blocks, duplicate heading content, missing blank lines, excessive line lengths. Always check markdown files when modifying documentation.
+
 ### PR Merge Conflict Resolution Workflow
 1. **Switch to feature branch**: `git checkout feature-branch`
 2. **Fetch latest changes**: `git fetch origin`
@@ -639,8 +666,14 @@ gh pr view [pr-number] --repo owner/repo
 ### Pre-Commit Workflow (MANDATORY)
 ```bash
 # Before EVERY commit and push - run this sequence:
-dotnet format --verify-no-changes    # Check formatting
+dotnet format --verify-no-changes    # Check code formatting
+# Check markdown linting (if Node.js available):
+npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**"
 dotnet build --configuration Release  # Ensure builds cleanly
 dotnet test --configuration Release   # Ensure all tests pass
-# Only push if all three commands succeed without errors
+# Only push if all commands succeed without errors
+
+# Or use the automated helper scripts:
+./scripts/pre-commit-check.ps1         # PowerShell (Windows)
+./scripts/pre-commit-check.sh          # Bash (Linux/macOS)
 ```
