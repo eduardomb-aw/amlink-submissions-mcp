@@ -45,22 +45,39 @@ public sealed class SubmissionApiTools
     /// <returns>Submission details in JSON format.</returns>
     [McpServerTool, Description("Get submission details from the Submission API using Identity Server 4 authentication.")]
     public async Task<string> GetSubmission(
-        [Description("The ID of the submission to retrieve")] string submissionId)
+        [Description("The ID of the submission to retrieve")] long submissionId)
     {
+        // Validate parameters BEFORE making HTTP calls
+        if (submissionId <= 0)
+        {
+            throw new ArgumentException("Submission ID must be a positive integer.", nameof(submissionId));
+        }
+
         var submissionApiToken = await GetSubmissionApiTokenAsync();
 
         var client = _httpClientFactory.CreateClient("SubmissionApi");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", submissionApiToken);
 
+        // Set User Agent from configuration
+        if (!string.IsNullOrEmpty(_externalApisConfig.SubmissionApi.UserAgent))
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(_externalApisConfig.SubmissionApi.UserAgent);
+        }
+
         var response = await client.GetAsync($"submissions/{submissionId}");
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new McpException($"Submission API call failed: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+            var errorContent = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException($"Submission API call failed: {response.StatusCode} - {errorContent}", null, response.StatusCode);
         }
 
         var jsonContent = await response.Content.ReadAsStringAsync();
-        return $"Submission Details:\n{jsonContent}";
+
+        // Validate JSON by attempting to parse it
+        JsonSerializer.Deserialize<JsonElement>(jsonContent);
+
+        return jsonContent;
     }
 
     /// <summary>
@@ -182,6 +199,12 @@ public sealed class SubmissionApiTools
         }
 
         var currentToken = authHeader["Bearer ".Length..];
+
+        // Validate that there's actually a token after "Bearer "
+        if (string.IsNullOrWhiteSpace(currentToken))
+        {
+            throw new McpException("No valid bearer token found in request");
+        }
 
         // Since both the MCP server and Submission API are secured by the same Identity Server 4,
         // we can potentially reuse the same token if it has the correct scopes.

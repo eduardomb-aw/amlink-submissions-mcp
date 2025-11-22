@@ -20,7 +20,7 @@ This is a Model Context Protocol (MCP) server and client implementation for AmLi
 
 ## Project Structure
 
-```
+```text
 ├── src/
 │   ├── amlink-submissions-mcp-client/    # Web client application (Razor Pages)
 │   │   ├── Configuration/                # Client configuration classes
@@ -203,6 +203,63 @@ public async Task MethodName_Scenario_ExpectedBehavior()
 - ❌ Writing implementation code without a failing test
 
 ## Coding Standards
+
+### Code Formatting Requirements
+
+**MANDATORY**: Always check code formatting before pushing code or creating PRs. Code formatting violations will cause PR validation failures.
+
+#### Pre-Push Formatting Checklist
+1. **Run Format Check**: Always run `dotnet format --verify-no-changes` before any commit
+2. **Fix Formatting**: If formatting issues are found, run `dotnet format` to fix them automatically
+3. **Verify Clean State**: Re-run `dotnet format --verify-no-changes` to ensure all issues are resolved
+4. **Commit Format Fixes**: If formatting changes were made, commit them separately with a clear message
+
+#### Required Commands Before Every Push
+```bash
+# 1. Check for code formatting issues
+dotnet format --verify-no-changes
+
+# 2. Check for markdown linting issues (if Node.js available)
+npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**"
+
+# 3. If issues found, fix them automatically
+dotnet format
+# Fix markdown issues manually
+
+# 4. Verify formatting is now clean
+dotnet format --verify-no-changes
+npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**"
+
+# 5. If changes were made, commit them
+git add -A
+git commit -m "Fix code formatting and markdown linting issues"
+
+# 6. Run tests to ensure formatting didn't break anything
+dotnet test --configuration Release
+
+# 7. Now safe to push
+git push
+```
+
+#### Common Formatting Issues
+- **Whitespace**: Mixed tabs/spaces, trailing whitespace, inconsistent line endings
+- **Indentation**: Incorrect indentation levels, inconsistent spacing
+- **Line Endings**: Mixed CRLF/LF line endings across files
+- **Code Style**: Inconsistent brace placement, spacing around operators
+- **Markdown Issues**: Missing language tags in fenced code blocks, duplicate headings, line length violations
+
+#### IDE Configuration
+- Configure your IDE to show whitespace characters
+- Set up auto-formatting on save where possible
+- Use consistent tab/space settings (project uses spaces)
+- Enable EditorConfig support for consistent formatting rules
+
+#### Why This Matters
+- **PR Validation**: Formatting and linting violations cause automatic PR failures
+- **Code Quality**: Consistent formatting improves code and documentation readability
+- **Team Efficiency**: Reduces time spent on formatting discussions in code reviews
+- **CI/CD Reliability**: Prevents build failures due to formatting and linting issues
+- **Documentation Standards**: Ensures markdown documentation follows best practices
 
 ### General Guidelines
 - Use C# 12 features and .NET 10 idioms
@@ -426,7 +483,7 @@ Required environment variables (see `.env.example`):
 - `ExternalApis__SubmissionApi__Version` - API version
 - `OPENAI_API_KEY` - OpenAI API key for LLM integration (REQUIRED)
 
-#### MCP Client
+#### MCP Client Environment Variables
 - `ASPNETCORE_ENVIRONMENT` - Runtime environment (Development/Production)
 - `ASPNETCORE_URLS` - Binding URLs for the client (e.g., `http://+:80;https://+:443`)
 - `ASPNETCORE_Kestrel__Certificates__Default__Password` - SSL certificate password for HTTPS
@@ -547,6 +604,26 @@ git push
 ```
 **Common causes**: Mixed tabs/spaces, incorrect indentation, trailing whitespace, inconsistent line endings. Always run `dotnet format` locally before pushing changes.
 
+#### Issue: "Found errors in [markdownlint] linter!" or markdown linting failures
+**Solution**: Markdown linting violations detected by super-linter. Common issues and fixes:
+```bash
+# Check markdown issues locally
+npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**"
+
+# Common markdown fixes:
+# 1. Add language to fenced code blocks:
+# Wrong: ```
+# Right: ```bash
+
+# 2. Fix duplicate headings by making them more specific:
+# Wrong: ### Client (appears twice)
+# Right: ### MCP Client and ### HTTP Client
+
+# 3. Add blank lines around headings and code blocks
+# 4. Keep line lengths reasonable (preferably under 120 chars)
+```
+**Common causes**: Missing language tags in code blocks, duplicate heading content, missing blank lines, excessive line lengths. Always check markdown files when modifying documentation.
+
 ### PR Merge Conflict Resolution Workflow
 1. **Switch to feature branch**: `git checkout feature-branch`
 2. **Fetch latest changes**: `git fetch origin`
@@ -608,10 +685,11 @@ gh api repos/OWNER/REPO/branches/main/protection -X PUT --input protection.json
 5. **Code Review**: Follow the repository's PR review process
 6. **Dependencies**: Only add dependencies when absolutely necessary
 7. **Docker**: Use Docker Compose for local development and testing
-8. **Branch Protection**: All main branch changes must go through PRs with required approvals and passing checks
-9. **Workflow Validation**: Test workflow changes locally and monitor runs immediately after pushing
-10. **Incremental Fixes**: When workflows fail, fix one issue at a time rather than making multiple changes simultaneously
-11. **Learning Documentation**: Update instructions based on troubleshooting experiences to prevent future issues
+8. **Docker**: Use Docker Compose for local development and testing
+9. **Branch Protection**: All main branch changes must go through PRs with required approvals and passing checks
+10. **Workflow Validation**: Test workflow changes locally and monitor runs immediately after pushing
+11. **Incremental Fixes**: When workflows fail, fix one issue at a time rather than making multiple changes simultaneously
+12. **Learning Documentation**: Update instructions based on troubleshooting experiences to prevent future issues
 
 ## Continuous Improvement
 
@@ -635,3 +713,18 @@ When encountering and resolving new issues:
 - Detailed troubleshooting patterns reduce future debugging time
 - Well-documented solutions enable faster onboarding of new developers
 - Institutional knowledge prevents the same issues from happening repeatedly
+
+### Pre-Commit Workflow (MANDATORY)
+```bash
+# Before EVERY commit and push - run this sequence:
+dotnet format --verify-no-changes    # Check code formatting
+# Check markdown linting (if Node.js available):
+npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**"
+dotnet build --configuration Release  # Ensure builds cleanly
+dotnet test --configuration Release   # Ensure all tests pass
+# Only push if all commands succeed without errors
+
+# Or use the automated helper scripts:
+./scripts/pre-commit-check.ps1         # PowerShell (Windows)
+./scripts/pre-commit-check.sh          # Bash (Linux/macOS)
+```
