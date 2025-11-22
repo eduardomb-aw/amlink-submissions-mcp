@@ -20,7 +20,7 @@ This is a Model Context Protocol (MCP) server and client implementation for AmLi
 
 ## Project Structure
 
-```
+```text
 ├── src/
 │   ├── amlink-submissions-mcp-client/    # Web client application (Razor Pages)
 │   │   ├── Configuration/                # Client configuration classes
@@ -521,7 +521,7 @@ private const string ValidJsonResponse = "{\"id\": 12345, \"status\": \"active\"
 - `ExternalApis__SubmissionApi__Version` - API version
 - `OPENAI_API_KEY` - OpenAI API key for LLM integration (REQUIRED)
 
-#### MCP Client
+#### MCP Client Environment Variables
 - `ASPNETCORE_ENVIRONMENT` - Runtime environment (Development/Production)
 - `ASPNETCORE_URLS` - Binding URLs for the client (e.g., `http://+:80;https://+:443`)
 - `ASPNETCORE_Kestrel__Certificates__Default__Password` - SSL certificate password for HTTPS
