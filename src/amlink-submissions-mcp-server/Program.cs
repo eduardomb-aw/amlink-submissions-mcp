@@ -19,7 +19,8 @@ var serverConfig = builder.Configuration.GetSection(ServerConfiguration.SectionN
 var idsConfig = builder.Configuration.GetSection(IdentityServerConfiguration.SectionName).Get<IdentityServerConfiguration>();
 var externalApisConfig = builder.Configuration.GetSection(ExternalApisConfiguration.SectionName).Get<ExternalApisConfiguration>();
 
-ValidateConfiguration(serverConfig, idsConfig, externalApisConfig);
+// Validate configuration before proceeding
+ConfigurationValidator.ValidateAll(serverConfig, idsConfig, externalApisConfig);
 
 // Configure Application Insights
 var aiConnectionString = builder.Configuration.GetConnectionString("ApplicationInsights");
@@ -57,6 +58,18 @@ builder.Services.AddAuthorization();
 const string SelfHealthCheckDescription = "Application is running";
 builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy(SelfHealthCheckDescription))
+    .AddCheck("configuration", () =>
+    {
+        try
+        {
+            ConfigurationValidator.ValidateAll(serverConfig, idsConfig, externalApisConfig);
+            return HealthCheckResult.Healthy("Configuration is valid");
+        }
+        catch (Exception ex)
+        {
+            return HealthCheckResult.Unhealthy("Configuration validation failed", ex);
+        }
+    })
     .AddUrlGroup(
         new Uri($"{idsConfig!.Url}/.well-known/openid-configuration"),
         name: "identity_server",
@@ -152,55 +165,6 @@ if (IsDevelopment)
 // Let ASP.NET Core use ASPNETCORE_URLS environment variable for binding
 // This allows Docker containers to bind to all interfaces (0.0.0.0:7072)
 app.Run();
-
-static void ValidateConfiguration(ServerConfiguration? serverConfig, IdentityServerConfiguration? idsConfig, ExternalApisConfiguration? externalApisConfig)
-{
-    if (serverConfig?.Url is null)
-    {
-        throw new InvalidOperationException("Server:Url configuration is required.");
-    }
-
-    if (idsConfig is null)
-    {
-        throw new InvalidOperationException("IdentityServer configuration section is required.");
-    }
-
-    if (string.IsNullOrEmpty(idsConfig.Url))
-    {
-        throw new InvalidOperationException("IdentityServer:Url configuration is required.");
-    }
-
-    if (string.IsNullOrEmpty(idsConfig.ClientId))
-    {
-        throw new InvalidOperationException("IdentityServer:ClientId configuration is required.");
-    }
-
-    if (string.IsNullOrEmpty(idsConfig.GrantType))
-    {
-        throw new InvalidOperationException("IdentityServer:GrantType configuration is required.");
-    }
-
-    if (string.IsNullOrEmpty(idsConfig.Scopes))
-    {
-        throw new InvalidOperationException("IdentityServer:Scopes configuration is required.");
-    }
-
-    if (externalApisConfig is null)
-    {
-        throw new InvalidOperationException("ExternalApis configuration section is required.");
-    }
-
-
-    if (string.IsNullOrEmpty(externalApisConfig.SubmissionApi?.BaseUrl))
-    {
-        throw new InvalidOperationException("ExternalApis:SubmissionApi:BaseUrl configuration is required.");
-    }
-
-    if (string.IsNullOrEmpty(externalApisConfig.SubmissionApi?.RequiredScope))
-    {
-        throw new InvalidOperationException("ExternalApis:SubmissionApi:RequiredScope configuration is required.");
-    }
-}
 
 
 static void ConfigureAuthentication(

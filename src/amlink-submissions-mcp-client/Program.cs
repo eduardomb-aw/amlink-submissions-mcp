@@ -16,26 +16,8 @@ var builder = WebApplication.CreateBuilder(args);
 var mcpConfig = builder.Configuration.GetSection(McpClientConfiguration.SectionName).Get<McpClientConfiguration>();
 var idsConfig = builder.Configuration.GetSection(IdentityServerConfiguration.SectionName).Get<IdentityServerConfiguration>();
 
-// Validate required configuration
-if (mcpConfig?.Url is null)
-{
-    throw new InvalidOperationException("McpServer:Url configuration is missing.");
-}
-
-if (idsConfig is null)
-{
-    throw new InvalidOperationException("IdentityServer configuration section is missing.");
-}
-
-if (string.IsNullOrEmpty(idsConfig.ClientId))
-{
-    throw new InvalidOperationException("IdentityServer:ClientId configuration is missing.");
-}
-
-if (string.IsNullOrEmpty(idsConfig.ClientSecret))
-{
-    throw new InvalidOperationException("IdentityServer:ClientSecret configuration is required. Consider using user secrets or environment variables for production.");
-}
+// Validate configuration before proceeding
+ConfigurationValidator.ValidateAll(mcpConfig, idsConfig);
 
 // Configure Application Insights
 var aiConnectionString = builder.Configuration.GetConnectionString("ApplicationInsights");
@@ -71,13 +53,25 @@ builder.Services.AddHttpClient(); // Add HTTP client factory
 const string SelfHealthCheckDescription = "Application is running";
 builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy(SelfHealthCheckDescription))
+    .AddCheck("configuration", () =>
+    {
+        try
+        {
+            ConfigurationValidator.ValidateAll(mcpConfig, idsConfig);
+            return HealthCheckResult.Healthy("Configuration is valid");
+        }
+        catch (Exception ex)
+        {
+            return HealthCheckResult.Unhealthy("Configuration validation failed", ex);
+        }
+    })
     .AddUrlGroup(
-        new Uri($"{mcpConfig.Url}/health"),
+        new Uri($"{mcpConfig!.Url}/health"),
         name: "mcp_server",
         failureStatus: HealthStatus.Degraded,
         timeout: TimeSpan.FromSeconds(5))
     .AddUrlGroup(
-        new Uri($"{idsConfig.Url}/.well-known/openid-configuration"),
+        new Uri($"{idsConfig!.Url}/.well-known/openid-configuration"),
         name: "identity_server",
         failureStatus: HealthStatus.Degraded,
         timeout: TimeSpan.FromSeconds(5));
