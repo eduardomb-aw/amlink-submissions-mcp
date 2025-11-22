@@ -67,8 +67,14 @@ public class ApplicationInsightsTests
         mockNext.Verify(n => n.Process(dependency), Times.Once);
     }
 
-    [Fact]
-    public void CustomTelemetryProcessor_Should_EnhanceDependencyTelemetry_ForIdentityServer()
+    [Theory]
+    [InlineData("identitydev.amwins.com")]
+    [InlineData("identity.amwins.com")]
+    [InlineData("identityprod.amwins.com")]
+    [InlineData("identitydev.amwins.net")]
+    [InlineData("identity.amwins.net")]
+    [InlineData("identitystaging.amwins.net")]
+    public void CustomTelemetryProcessor_Should_EnhanceDependencyTelemetry_ForIdentityServer(string target)
     {
         // Arrange
         var mockNext = new Mock<ITelemetryProcessor>();
@@ -76,7 +82,7 @@ public class ApplicationInsightsTests
         var dependency = new DependencyTelemetry
         {
             Name = "GET /.well-known/openid-configuration",
-            Target = "identitydev.amwins.com",
+            Target = target,
             Type = "HTTP"
         };
 

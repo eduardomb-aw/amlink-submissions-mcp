@@ -44,9 +44,9 @@ public class CustomTelemetryProcessor : ITelemetryProcessor
                 dependency.Properties["BusinessDomain"] = "Submissions";
             }
 
-            // Tag identity server calls
-            if (dependency.Target?.Contains("identitydev.amwins.com") == true ||
-                dependency.Target?.Contains("identity.amwins.com") == true)
+            // Tag identity server calls (supports identity*.amwins.com and identity*.amwins.net)
+            if ((dependency.Target?.StartsWith("identity", StringComparison.OrdinalIgnoreCase) == true &&
+                 (dependency.Target.Contains(".amwins.com") || dependency.Target.Contains(".amwins.net"))))
             {
                 dependency.Properties["ApiType"] = "IdentityServer";
                 dependency.Properties["ServiceFamily"] = "Auth";
