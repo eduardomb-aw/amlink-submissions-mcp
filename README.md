@@ -1,5 +1,25 @@
 # AmLink Submissions MCP
 
+<!-- Build & CI/CD Status -->
+[![CI/CD Pipeline](https://github.com/eduardomb-aw/amlink-submissions-mcp/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/eduardomb-aw/amlink-submissions-mcp/actions/workflows/ci-cd.yml)
+[![PR Validation](https://github.com/eduardomb-aw/amlink-submissions-mcp/actions/workflows/pr-validation.yml/badge.svg)](https://github.com/eduardomb-aw/amlink-submissions-mcp/actions/workflows/pr-validation.yml)
+[![Build and Push](https://github.com/eduardomb-aw/amlink-submissions-mcp/actions/workflows/build-and-push.yml/badge.svg)](https://github.com/eduardomb-aw/amlink-submissions-mcp/actions/workflows/build-and-push.yml)
+
+<!-- Code Quality -->
+[![codecov](https://codecov.io/gh/eduardomb-aw/amlink-submissions-mcp/graph/badge.svg)](https://codecov.io/gh/eduardomb-aw/amlink-submissions-mcp)
+[![Security: Trivy](https://img.shields.io/badge/Security-Trivy-blue)](https://github.com/eduardomb-aw/amlink-submissions-mcp/security/code-scanning)
+
+<!-- Project Information -->
+[![License: MIT](https://img.shields.io/github/license/eduardomb-aw/amlink-submissions-mcp)](https://github.com/eduardomb-aw/amlink-submissions-mcp/blob/main/LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/eduardomb-aw/amlink-submissions-mcp)](https://github.com/eduardomb-aw/amlink-submissions-mcp/releases/latest)
+[![.NET](https://img.shields.io/badge/.NET-10.0-purple)](https://dotnet.microsoft.com/download/dotnet/10.0)
+[![Docker](https://img.shields.io/badge/Docker-GHCR-blue?logo=docker)](https://github.com/eduardomb-aw/amlink-submissions-mcp/pkgs/container/amlink-submissions-mcp-server)
+
+<!-- Activity & Stats -->
+[![GitHub last commit](https://img.shields.io/github/last-commit/eduardomb-aw/amlink-submissions-mcp)](https://github.com/eduardomb-aw/amlink-submissions-mcp/commits/main)
+[![GitHub issues](https://img.shields.io/github/issues/eduardomb-aw/amlink-submissions-mcp)](https://github.com/eduardomb-aw/amlink-submissions-mcp/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/eduardomb-aw/amlink-submissions-mcp)](https://github.com/eduardomb-aw/amlink-submissions-mcp/pulls)
+
 A Model Context Protocol (MCP) server and client implementation for AmLink
 submissions API integration, built with ASP.NET Core and secured with
 Identity Server 4.
