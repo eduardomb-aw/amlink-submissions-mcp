@@ -70,10 +70,11 @@ public sealed class SubmissionApiTools
 
         var jsonContent = await response.Content.ReadAsStringAsync();
 
-        // Validate JSON by attempting to parse it
-        JsonSerializer.Deserialize<JsonElement>(jsonContent);
+        // Validate JSON by deserializing it to JsonElement
+        var jsonElement = JsonSerializer.Deserialize<JsonElement>(jsonContent);
 
-        return jsonContent;
+        // Return the serialized JsonElement to ensure valid, normalized JSON
+        return JsonSerializer.Serialize(jsonElement);
     }
 
     /// <summary>
