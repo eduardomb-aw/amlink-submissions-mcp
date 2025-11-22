@@ -1,12 +1,12 @@
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using System.Text.Json;
 using AmLink.Submission.Mcp.Server.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using ModelContextProtocol.AspNetCore.Authentication;
-using System.Net.Http.Headers;
-using System.Security.Claims;
-using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
