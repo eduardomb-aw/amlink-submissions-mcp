@@ -189,7 +189,13 @@ public sealed class SubmissionApiTools
         var httpContext = _httpContextAccessor.HttpContext
            ?? throw new McpException("HTTP context not available");
 
-        var authHeader = httpContext.Request.Headers.Authorization.FirstOrDefault();
+        if (!httpContext.Request.Headers.TryGetValue("Authorization", out var authHeaderValues) ||
+            authHeaderValues.Count == 0)
+        {
+            throw new McpException("No valid bearer token found in request");
+        }
+
+        var authHeader = authHeaderValues.FirstOrDefault();
         if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
         {
             throw new McpException("No valid bearer token found in request");

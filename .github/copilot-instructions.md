@@ -133,6 +133,9 @@ public async Task GetSubmission_WithNullSubmissionId_ShouldThrowArgumentNullExce
 - Verify proper authorization header handling
 - Test token validation and scope requirements
 - Test unauthorized access scenarios
+- **Critical**: Mock authorization headers with both dictionary access (`h["Authorization"]`) and `TryGetValue()` method
+- Test HttpContext availability and proper error handling when context is missing
+- Validate that authentication errors throw `McpException` before any HTTP calls are made
 
 ### Test Structure Standards
 
@@ -195,12 +198,73 @@ public async Task MethodName_Scenario_ExpectedBehavior()
 - **PR Validation**: Failing tests block merge until implementation is complete
 - **Forcing Function**: Failing tests in PR ensure complete implementation before merge
 
+### Unit Test Consistency Guidelines
+
+#### Test Organization and Structure
+- **Use Test Constants**: Define common test values as constants at the top of test classes
+  ```csharp
+  private const long ValidSubmissionId = 12345L;
+  private const string ValidJsonResponse = "{\"id\": 12345, \"status\": \"active\"}";
+  private const string TestBearerToken = "Bearer test-token";
+  ```
+- **Group Related Tests**: Use `#region` markers to organize test categories (Parameter Validation, HTTP Integration, Security, etc.)
+- **Consistent Naming**: Always follow `MethodName_Scenario_ExpectedBehavior` pattern
+
+#### Mock Setup Consistency
+- **Create Helper Methods**: Extract complex mock setup into reusable helper methods
+  ```csharp
+  private static Mock<IHttpContextAccessor> CreateMockHttpContextAccessor(string? authHeaderValue = null)
+  {
+      // Standardized mock setup logic
+  }
+  ```
+- **Centralize HttpClient Configuration**: Set up HTTP clients with proper headers in constructor
+- **Standardize Authorization**: Use consistent patterns for mocking authorization headers across all tests
+
+#### Test Data Management
+- **Avoid Magic Numbers**: Replace hardcoded values with named constants
+- **Consistent Test IDs**: Use the same test values across related tests for easier maintenance
+- **Realistic Test Data**: Use meaningful JSON responses that reflect actual API structures
+
+#### Assertion Patterns
+- **Consistent Exception Testing**: Always verify both exception type and relevant properties
+  ```csharp
+  var exception = await Assert.ThrowsAsync<ArgumentException>(() => method(parameter));
+  Assert.Equal("parameterName", exception.ParamName);
+  Assert.Contains("expected message", exception.Message);
+  ```
+- **HTTP Request Validation**: When testing HTTP calls, verify method, URL, headers, and authorization
+- **JSON Validation**: Parse and validate JSON responses rather than string comparison
+
+#### Test Categories and Coverage
+- **Parameter Validation**: Test null, empty, zero, negative, and boundary values
+- **HTTP Integration**: Test success scenarios, various error codes, timeouts, and network failures  
+- **JSON Processing**: Test valid JSON, invalid JSON, empty responses, and malformed data
+- **Security Testing**: Test missing tokens, invalid tokens, expired tokens, and insufficient scopes
+- **Edge Cases**: Test maximum values, special characters, and unusual but valid inputs
+
+#### Mock Configuration Best Practices
+- **HttpMessageHandler Mocking**: Use `Mock.Protected()` for HTTP request interception
+- **Request Capture**: Use callbacks to capture and verify actual HTTP requests made
+- **Response Simulation**: Create realistic HTTP responses with proper status codes and content
+- **Authorization Header Setup**: Mock both dictionary access and `TryGetValue` methods for headers
+
+#### Test Maintenance Guidelines
+- **DRY Principle**: Extract common setup logic into helper methods or base classes
+- **Readable Assertions**: Use descriptive assertion messages that explain what went wrong
+- **Test Documentation**: Add comments explaining complex test scenarios or edge cases
+- **Consistent Formatting**: Follow the same indentation and spacing patterns across all tests
+
 ### TDD Anti-Patterns to Avoid
 - ❌ Writing tests after implementation
 - ❌ Making tests pass by changing the test instead of the code
 - ❌ Writing tests that don't actually test the intended behavior
 - ❌ Skipping edge cases or error conditions
 - ❌ Writing implementation code without a failing test
+- ❌ Using magic numbers instead of named constants in tests
+- ❌ Duplicating complex mock setup across multiple test methods
+- ❌ Inconsistent naming patterns for similar test scenarios
+- ❌ Testing implementation details instead of behavior
 
 ## Coding Standards
 
@@ -331,6 +395,37 @@ Required environment variables (see `.env.example`):
 - Verify `IDENTITY_SERVER_CLIENT_SECRET` is properly configured
 - Check Identity Server 4 configuration in both client and server
 - Ensure JWT Bearer tokens are correctly validated
+
+### Unit Test Issues
+
+#### Issue: "No valid bearer token found in request" in tests
+**Root Cause**: Authorization header mock setup doesn't properly handle both dictionary access and `TryGetValue()` method calls.
+**Solution**: Mock both access patterns:
+```csharp
+var authHeaderValue = new Microsoft.Extensions.Primitives.StringValues("Bearer test-token");
+mockHeaders.Setup(h => h["Authorization"]).Returns(authHeaderValue);
+mockHeaders.Setup(h => h.TryGetValue("Authorization", out It.Ref<Microsoft.Extensions.Primitives.StringValues>.IsAny))
+    .Returns((string key, out Microsoft.Extensions.Primitives.StringValues values) =>
+    {
+        values = authHeaderValue;
+        return true;
+    });
+```
+
+#### Issue: "Sequence contains no elements" in HTTP request validation tests
+**Root Cause**: User Agent header not configured in test HttpClient setup.
+**Solution**: Configure User Agent in test client setup:
+```csharp
+_httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("test-client/1.0");
+```
+
+#### Issue: Inconsistent test data across test methods
+**Root Cause**: Magic numbers and hardcoded values scattered throughout tests.
+**Solution**: Define constants at class level and reuse:
+```csharp
+private const long ValidSubmissionId = 12345L;
+private const string ValidJsonResponse = "{\"id\": 12345, \"status\": \"active\"}";
+```
 
 ### GitHub Actions Workflow Issues
 
