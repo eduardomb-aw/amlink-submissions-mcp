@@ -269,6 +269,63 @@ public async Task MethodName_Scenario_ExpectedBehavior()
 
 ## Coding Standards
 
+### Code Formatting Requirements
+
+**MANDATORY**: Always check code formatting before pushing code or creating PRs. Code formatting violations will cause PR validation failures.
+
+#### Pre-Push Formatting Checklist
+1. **Run Format Check**: Always run `dotnet format --verify-no-changes` before any commit
+2. **Fix Formatting**: If formatting issues are found, run `dotnet format` to fix them automatically
+3. **Verify Clean State**: Re-run `dotnet format --verify-no-changes` to ensure all issues are resolved
+4. **Commit Format Fixes**: If formatting changes were made, commit them separately with a clear message
+
+#### Required Commands Before Every Push
+```bash
+# 1. Check for code formatting issues
+dotnet format --verify-no-changes
+
+# 2. Check for markdown linting issues (if Node.js available)
+npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**"
+
+# 3. If issues found, fix them automatically
+dotnet format
+# Fix markdown issues manually
+
+# 4. Verify formatting is now clean
+dotnet format --verify-no-changes
+npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**"
+
+# 5. If changes were made, commit them
+git add -A
+git commit -m "Fix code formatting and markdown linting issues"
+
+# 6. Run tests to ensure formatting didn't break anything
+dotnet test --configuration Release
+
+# 7. Now safe to push
+git push
+```
+
+#### Common Formatting Issues
+- **Whitespace**: Mixed tabs/spaces, trailing whitespace, inconsistent line endings
+- **Indentation**: Incorrect indentation levels, inconsistent spacing
+- **Line Endings**: Mixed CRLF/LF line endings across files
+- **Code Style**: Inconsistent brace placement, spacing around operators
+- **Markdown Issues**: Missing language tags in fenced code blocks, duplicate headings, line length violations
+
+#### IDE Configuration
+- Configure your IDE to show whitespace characters
+- Set up auto-formatting on save where possible
+- Use consistent tab/space settings (project uses spaces)
+- Enable EditorConfig support for consistent formatting rules
+
+#### Why This Matters
+- **PR Validation**: Formatting and linting violations cause automatic PR failures
+- **Code Quality**: Consistent formatting improves code and documentation readability
+- **Team Efficiency**: Reduces time spent on formatting discussions in code reviews
+- **CI/CD Reliability**: Prevents build failures due to formatting and linting issues
+- **Documentation Standards**: Ensures markdown documentation follows best practices
+
 ### General Guidelines
 - Use C# 12 features and .NET 10 idioms
 - Enable nullable reference types (`<Nullable>enable</Nullable>`)
@@ -702,6 +759,26 @@ git push
 ```
 **Common causes**: Mixed tabs/spaces, incorrect indentation, trailing whitespace, inconsistent line endings. Always run `dotnet format` locally before pushing changes.
 
+#### Issue: "Found errors in [markdownlint] linter!" or markdown linting failures
+**Solution**: Markdown linting violations detected by super-linter. Common issues and fixes:
+```bash
+# Check markdown issues locally
+npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**"
+
+# Common markdown fixes:
+# 1. Add language to fenced code blocks:
+# Wrong: ```
+# Right: ```bash
+
+# 2. Fix duplicate headings by making them more specific:
+# Wrong: ### Client (appears twice)
+# Right: ### MCP Client and ### HTTP Client
+
+# 3. Add blank lines around headings and code blocks
+# 4. Keep line lengths reasonable (preferably under 120 chars)
+```
+**Common causes**: Missing language tags in code blocks, duplicate heading content, missing blank lines, excessive line lengths. Always check markdown files when modifying documentation.
+
 #### Issue: "Files should end with a single newline character" (MD047)
 **Root Cause**: Markdown files missing trailing newlines, commonly affects README.md files in subdirectories.
 **Solution**: Add trailing newline to affected files:
@@ -751,6 +828,33 @@ gh run rerun [run-id] --repo owner/repo
 gh pr view [pr-number] --repo owner/repo
 ```
 
+## Branch Protection Rules
+
+The main branch is protected with the following requirements:
+
+### Required Checks
+- **Status Checks**: Both "Validate PR" and "Lint & Security" workflows must pass
+- **PR Reviews**: At least 1 approving review required
+- **Conversation Resolution**: All conversations must be resolved before merge
+- **Stale Review Dismissal**: Reviews are dismissed when new commits are pushed
+
+### Prohibited Actions
+- **Direct Commits**: All changes to main must go through Pull Requests
+- **Force Push**: Force pushes to main are blocked
+- **Branch Deletion**: Main branch cannot be deleted
+- **Admin Bypass**: Repository admins can bypass branch protection rules (enforce_admins: false for flexibility), but are expected to follow the same process unless an exception is required.
+
+### Branch Protection Configuration
+```bash
+# Replace OWNER/REPO with your repository path (e.g., eduardomb-aw/amlink-submissions-mcp)
+
+# View current protection rules
+gh api repos/OWNER/REPO/branches/main/protection
+
+# Update protection rules (use with caution)
+# Replace OWNER/REPO with your repository path
+gh api repos/OWNER/REPO/branches/main/protection -X PUT --input protection.json
+```
 ## Best Practices
 
 1. **Minimal Changes**: Make the smallest possible changes to achieve the goal
@@ -760,6 +864,46 @@ gh pr view [pr-number] --repo owner/repo
 5. **Code Review**: Follow the repository's PR review process
 6. **Dependencies**: Only add dependencies when absolutely necessary
 7. **Docker**: Use Docker Compose for local development and testing
-8. **Workflow Validation**: Test workflow changes locally and monitor runs immediately after pushing
-9. **Incremental Fixes**: When workflows fail, fix one issue at a time rather than making multiple changes simultaneously
-10. **Learning Documentation**: Update instructions based on troubleshooting experiences to prevent future issues
+8. **Docker**: Use Docker Compose for local development and testing
+9. **Branch Protection**: All main branch changes must go through PRs with required approvals and passing checks
+10. **Workflow Validation**: Test workflow changes locally and monitor runs immediately after pushing
+11. **Incremental Fixes**: When workflows fail, fix one issue at a time rather than making multiple changes simultaneously
+12. **Learning Documentation**: Update instructions based on troubleshooting experiences to prevent future issues
+
+## Continuous Improvement
+
+### Recording New Instructions
+When encountering and resolving new issues:
+
+1. **Document the Problem**: Record the specific error message, failure pattern, or issue encountered
+2. **Document the Solution**: Capture the exact steps taken to resolve the issue
+3. **Add to Troubleshooting**: Update the relevant troubleshooting section with the new pattern
+4. **Update Best Practices**: If the issue reveals a process improvement, add it to the best practices
+5. **Commit Knowledge**: Always commit instruction updates to preserve institutional knowledge
+
+### Pattern Recognition
+- Look for recurring issues across different PRs or workflows
+- Identify root causes rather than just symptoms
+- Create systematic solutions that prevent issue recurrence
+- Build comprehensive troubleshooting patterns that others can follow
+
+### Knowledge Preservation
+- Each resolved issue is a learning opportunity for the entire team
+- Detailed troubleshooting patterns reduce future debugging time
+- Well-documented solutions enable faster onboarding of new developers
+- Institutional knowledge prevents the same issues from happening repeatedly
+
+### Pre-Commit Workflow (MANDATORY)
+```bash
+# Before EVERY commit and push - run this sequence:
+dotnet format --verify-no-changes    # Check code formatting
+# Check markdown linting (if Node.js available):
+npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**"
+dotnet build --configuration Release  # Ensure builds cleanly
+dotnet test --configuration Release   # Ensure all tests pass
+# Only push if all commands succeed without errors
+
+# Or use the automated helper scripts:
+./scripts/pre-commit-check.ps1         # PowerShell (Windows)
+./scripts/pre-commit-check.sh          # Bash (Linux/macOS)
+```

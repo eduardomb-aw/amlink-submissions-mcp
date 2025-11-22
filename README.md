@@ -176,6 +176,34 @@ The deployment pipeline automatically configures:
 
 ## 🛠️ Development
 
+### Code Formatting (REQUIRED)
+
+**Before committing or creating PRs**, always check and fix code formatting:
+
+```bash
+# Option 1: Use the pre-commit validation script (recommended)
+# Windows PowerShell
+.\scripts\pre-commit-check.ps1
+
+# Linux/macOS
+./scripts/pre-commit-check.sh
+
+# With automatic formatting fix
+.\scripts\pre-commit-check.ps1 -FixFormatting
+
+# Option 2: Manual validation
+# Check formatting (required before any push)
+dotnet format --verify-no-changes
+
+# Fix formatting issues automatically
+dotnet format
+
+# Complete pre-commit validation
+dotnet format --verify-no-changes && dotnet build --configuration Release && dotnet test --configuration Release
+```
+
+> **⚠️ Critical**: Formatting violations will cause PR validation failures. This step is mandatory.
+
 ### Building Locally
 
 ```bash
@@ -319,14 +347,24 @@ We welcome contributions! Here's how to get started:
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes following our [coding standards](.github/copilot-instructions.md)
 4. Add tests for your changes
-5. **Run pre-push validation** (see below)
-6. Commit your changes (`git commit -m 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
+5. **MANDATORY**: Check code formatting before committing:
+   ```bash
+   # Use the pre-commit validation script (recommended)
+   .\scripts\pre-commit-check.ps1 -FixFormatting
+   
+   # Or manual validation
+   dotnet format --verify-no-changes
+   dotnet format  # if issues found
+   dotnet test --configuration Release
+   ```
+6. **Run comprehensive pre-push validation** (see below)
+7. Commit your changes (`git commit -m 'Add amazing feature'`)
+8. Push to the branch (`git push origin feature/amazing-feature`)
+9. Open a Pull Request
 
 ### Pre-Push Validation
 
-Before pushing any changes, **always** run our pre-push validation to catch issues locally:
+Before pushing any changes, **always** run our comprehensive pre-push validation to catch issues locally:
 
 ```powershell
 # One-time setup (installs required tools)
@@ -337,6 +375,8 @@ Before pushing any changes, **always** run our pre-push validation to catch issu
 ```
 
 This prevents PR validation failures and provides immediate feedback in 30-60 seconds locally.
+
+> **⚠️ Important**: PRs with formatting violations will fail validation. Always run `dotnet format --verify-no-changes` before pushing.
 
 ### Documentation
 

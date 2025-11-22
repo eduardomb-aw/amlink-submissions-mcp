@@ -24,6 +24,17 @@ This document outlines the development workflow for the AmLink Submissions MCP p
 
    ```bash
    # Make changes
+   
+   # MANDATORY: Check formatting before commit
+   dotnet format --verify-no-changes
+   
+   # Fix any formatting issues
+   dotnet format
+   
+   # Verify clean state and run tests
+   dotnet format --verify-no-changes && dotnet test --configuration Release
+   
+   # Commit changes
    git add .
    git commit -m "feat: add new feature"
    ```
@@ -114,6 +125,27 @@ docker-compose up -d --build
 docker-compose down
 ```
 
+### Code Formatting (MANDATORY)
+
+**Critical**: Always check and fix formatting before any commit or push. PR validation will fail for formatting violations.
+
+```bash
+# Use the automated pre-commit validation script (recommended)
+# Windows PowerShell
+.\scripts\pre-commit-check.ps1 -FixFormatting
+
+# Linux/macOS  
+./scripts/pre-commit-check.sh --fix-formatting
+
+# Manual validation (if preferred)
+dotnet format --verify-no-changes  # Check formatting
+dotnet format                       # Fix issues
+dotnet build --configuration Release && dotnet test --configuration Release
+
+# Only push if all validation passes
+git push
+```
+
 ### Testing
 
 ```bash
@@ -122,9 +154,6 @@ dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
-
-# Format code
-dotnet format
 ```
 
 ## 📦 Container Registry
