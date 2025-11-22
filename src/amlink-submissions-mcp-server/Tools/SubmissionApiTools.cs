@@ -58,11 +58,7 @@ public sealed class SubmissionApiTools
         var client = _httpClientFactory.CreateClient("SubmissionApi");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", submissionApiToken);
 
-        // Set User Agent from configuration
-        if (!string.IsNullOrEmpty(_externalApisConfig.SubmissionApi.UserAgent))
-        {
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(_externalApisConfig.SubmissionApi.UserAgent);
-        }
+        // User Agent header is now configured in the HTTP client factory setup.
 
         var response = await client.GetAsync($"submissions/{submissionId}");
 
