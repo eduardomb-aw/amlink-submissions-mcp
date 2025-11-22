@@ -2,6 +2,8 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using AmLink.Submissions.Mcp.Client.Configuration;
 using AmLink.Submissions.Mcp.Client.Services;
+using Microsoft.ApplicationInsights.DependencyCollector;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.AI;
@@ -33,6 +35,24 @@ if (string.IsNullOrEmpty(idsConfig.ClientId))
 if (string.IsNullOrEmpty(idsConfig.ClientSecret))
 {
     throw new InvalidOperationException("IdentityServer:ClientSecret configuration is required. Consider using user secrets or environment variables for production.");
+}
+
+// Configure Application Insights
+var aiConnectionString = builder.Configuration.GetConnectionString("ApplicationInsights");
+if (!string.IsNullOrEmpty(aiConnectionString))
+{
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ConnectionString = aiConnectionString;
+        options.EnableAdaptiveSampling = builder.Configuration.GetValue<bool>("ApplicationInsights:EnableAdaptiveSampling", true);
+        options.EnableQuickPulseMetricStream = builder.Configuration.GetValue<bool>("ApplicationInsights:EnableQuickPulseMetricStream", true);
+    });
+
+    // Enable SQL command text instrumentation for dependency tracking
+    builder.Services.ConfigureTelemetryModule<DependencyTrackingTelemetryModule>((module, o) =>
+    {
+        module.EnableSqlCommandTextInstrumentation = true;
+    });
 }
 
 var openAiKey = builder.Configuration.GetValue<string>("OPENAI_API_KEY");
