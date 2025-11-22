@@ -177,19 +177,29 @@ Write-ValidationStep "Checking linting tools availability..."
 
 $toolsAvailable = $true
 
-# Check for markdownlint
+# Check for markdownlint (using npx)
 try {
-    markdownlint --version | Out-Null
+    npx --yes markdownlint-cli2@latest --version | Out-Null
     Write-Host "   ✅ markdownlint is available"
 } catch {
-    Write-Host "   ⚠️  markdownlint not found. Install with: npm install -g markdownlint-cli" -ForegroundColor Yellow
+    Write-Host "   ⚠️  markdownlint not found. Requires Node.js/npm" -ForegroundColor Yellow
     $toolsAvailable = $false
 }
 
 # Check for hadolint (Dockerfile linter)
 try {
-    hadolint --version | Out-Null
-    Write-Host "   ✅ hadolint is available"
+    # Try both hadolint and hadolint.exe
+    $hadolintCmd = Get-Command "hadolint" -ErrorAction SilentlyContinue
+    if (-not $hadolintCmd) {
+        $hadolintCmd = Get-Command "hadolint.exe" -ErrorAction SilentlyContinue
+    }
+    
+    if ($hadolintCmd) {
+        Write-Host "   ✅ hadolint is available"
+    } else {
+        Write-Host "   ⚠️  hadolint not found. Install from: https://github.com/hadolint/hadolint#install" -ForegroundColor Yellow
+        $toolsAvailable = $false
+    }
 } catch {
     Write-Host "   ⚠️  hadolint not found. Install from: https://github.com/hadolint/hadolint#install" -ForegroundColor Yellow
     $toolsAvailable = $false
@@ -201,23 +211,12 @@ if ($toolsAvailable) {
     # Markdown validation
     Write-ValidationStep "Validating Markdown files..."
     try {
-        $markdownFiles = Get-ChildItem -Recurse -Filter "*.md" | Where-Object { 
-            $_.FullName -notlike "*node_modules*" -and $_.FullName -notlike "*bin*" -and $_.FullName -notlike "*obj*"
-        }
-        
-        $markdownErrors = $false
-        foreach ($file in $markdownFiles) {
-            markdownlint $file.FullName 2>$null
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "   ❌ Markdown issues in: $($file.Name)" -ForegroundColor Red
-                $markdownErrors = $true
-            }
-        }
-        
-        if (-not $markdownErrors) {
+        # Use same pattern as GitHub Actions for consistency
+        npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**" 2>$null
+        if ($LASTEXITCODE -eq 0) {
             Write-ValidationSuccess "All Markdown files are valid"
         } else {
-            Write-ValidationError "Markdown validation failed. Run 'markdownlint [file]' for details."
+            Write-ValidationError "Markdown validation failed. Run 'npx --yes markdownlint-cli2@latest \"**/*.md\"' for details."
         }
     } catch {
         Write-ValidationError "Failed to validate Markdown: $($_.Exception.Message)"
@@ -231,12 +230,22 @@ if ($toolsAvailable) {
         }
         
         $dockerfileErrors = $false
-        foreach ($dockerfile in $dockerfiles) {
-            hadolint $dockerfile.FullName 2>$null
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "   ❌ Dockerfile issues in: $($dockerfile.Name)" -ForegroundColor Red
-                $dockerfileErrors = $true
+        # Use the available hadolint command
+        $hadolintCmd = Get-Command "hadolint" -ErrorAction SilentlyContinue
+        if (-not $hadolintCmd) {
+            $hadolintCmd = Get-Command "hadolint.exe" -ErrorAction SilentlyContinue
+        }
+        
+        if ($hadolintCmd) {
+            foreach ($dockerfile in $dockerfiles) {
+                & $hadolintCmd.Name $dockerfile.FullName 2>$null
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "   ❌ Dockerfile issues in: $($dockerfile.Name)" -ForegroundColor Red
+                    $dockerfileErrors = $true
+                }
             }
+        } else {
+            Write-Host "   ⚠️  Skipping Dockerfile validation - hadolint not found" -ForegroundColor Yellow
         }
         
         if (-not $dockerfileErrors) {
@@ -249,7 +258,19 @@ if ($toolsAvailable) {
     }
     
 } else {
-    Write-Host "   ⚠️  Skipping detailed linting due to missing tools" -ForegroundColor Yellow
+    # Even without all tools, try to run markdownlint if Node.js is available
+    Write-ValidationStep "Attempting basic markdown validation..."
+    try {
+        npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" "!**/obj/**" 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            Write-ValidationSuccess "Markdown files validation passed"
+        } else {
+            Write-ValidationError "Markdown validation failed. Check for trailing spaces or formatting issues."
+        }
+    } catch {
+        Write-Host "   ⚠️  Markdown validation skipped - Node.js/npm not available" -ForegroundColor Yellow
+    }
+    
     Write-Host "   ℹ️  GitHub Actions will perform full linting validation" -ForegroundColor Blue
 }
 

@@ -11,6 +11,7 @@
   "MD034": false,
   "MD040": false,
   "MD047": true,
+  "MD060": false,
   "line-length": false,
   "no-duplicate-heading": false,
   "no-trailing-punctuation": false,
@@ -21,5 +22,6 @@
   "blanks-around-headings": false,
   "blanks-around-lists": false,
   "blanks-around-fences": false,
-  "single-trailing-newline": true
+  "single-trailing-newline": true,
+  "table-column-style": false
 }

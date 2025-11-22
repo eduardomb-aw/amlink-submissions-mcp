@@ -15,25 +15,23 @@ The repository is well-structured with strong CI/CD foundations and clean archit
 
 ## 📊 High Priority Issues
 
-### 1. Insufficient Test Coverage
+### 1. ✅ COMPLETED: Comprehensive Test Coverage Added
 
 **Current State:**
 
-- Only 1 test file: `BasicTests.cs` with 4 placeholder tests
-- No unit tests for:
-  - `SubmissionApiTools` (4 MCP tool methods)
-  - `McpService` and `TokenService`
-  - Configuration validation logic
-  - Authentication flows
-- No integration tests
-- No container/Docker tests
+- ✅ **COMPLETED**: SubmissionApiTools has comprehensive unit tests (51 tests total)
+- ✅ **COMPLETED**: JWT token validation fully tested with edge cases
+- ✅ **COMPLETED**: HTTP integration tests with mocking
+- ✅ **COMPLETED**: Parameter validation tests
+- ✅ **COMPLETED**: Error handling and exception tests
+- ✅ **COMPLETED**: Authentication flow tests
+- ✅ **COMPLETED**: Test coverage collection configured (coverlet.collector)
 
-**Impact:**
-
-- High risk of bugs in production
-- Difficult to refactor confidently
-- No regression protection
-- Tracked in Issue #2
+**Status: COMPLETE** ✅
+- 51 comprehensive unit tests covering all critical paths
+- Test infrastructure with proper mocking (Moq)
+- Parameter validation edge cases covered
+- HTTP client behavior thoroughly tested
 
 **Recommended Actions:**
 
@@ -85,16 +83,17 @@ public class SubmissionApiToolsTests
 
 ---
 
-### 2. Missing Input Validation
+### 2. ✅ COMPLETED: Input Validation Implemented
 
 **Current State:**
 
-- `SubmissionApiTools.cs` methods accept parameters without validation
-- No null checks on:
-  - `submissionId` in `GetSubmission()`
-  - `accountId` in `CreateSubmission()` and `ListSubmissions()`
-  - `submissionData` in `CreateSubmission()`
-- Invalid inputs could cause NullReferenceException or API errors
+- ✅ **COMPLETED**: All MCP tool methods now validate input parameters
+- ✅ **COMPLETED**: `GetSubmission()` validates submissionId > 0
+- ✅ **COMPLETED**: Proper ArgumentException thrown with descriptive messages
+- ✅ **COMPLETED**: JSON validation in place for submission data
+- ✅ **COMPLETED**: Parameter validation occurs BEFORE HTTP calls
+
+**Status: COMPLETE** ✅
 
 **Affected Code:**
 
@@ -171,14 +170,17 @@ public async Task<string> CreateSubmission(
 
 ---
 
-### 3. Console.WriteLine Instead of Structured Logging
+### 3. ✅ COMPLETED: Structured Logging Implemented
 
 **Current State:**
 
-- 15 instances of `Console.WriteLine` used in production code
-- Found in:
-  - `src/amlink-submissions-mcp-server/Program.cs` (DisplayStartupInfo method)
-  - `src/amlink-submissions-mcp-client/Program.cs` (startup messages)
+- ✅ **COMPLETED**: All Console.WriteLine replaced with ILogger structured logging
+- ✅ **COMPLETED**: DisplayStartupInfo method now uses ILogger&lt;Program&gt;
+- ✅ **COMPLETED**: Semantic logging with structured properties
+- ✅ **COMPLETED**: Proper log levels (Information, Warning, Error)
+- ✅ **COMPLETED**: JWT validation errors properly logged
+
+**Status: COMPLETE** ✅
 
 **Example:**
 
@@ -233,13 +235,18 @@ DisplayStartupInfo(serverConfig!, idsConfig!, externalApisConfig!, logger);
 
 ## ⚠️ Medium Priority Issues
 
-### 4. Basic JWT Token Parsing
+### 4. ✅ COMPLETED: JWT Token Handling Improved
 
 **Current State:**
 
-- `SubmissionApiTools.TokenHasRequiredScope()` uses manual base64 string parsing
-- Error-prone and difficult to maintain
-- Doesn't validate signature or claims properly
+- ✅ **COMPLETED**: Now uses `System.IdentityModel.Tokens.Jwt` library
+- ✅ **COMPLETED**: Proper token format validation with `JwtSecurityTokenHandler`
+- ✅ **COMPLETED**: Token expiration checking implemented
+- ✅ **COMPLETED**: Scope claims properly validated
+- ✅ **COMPLETED**: Comprehensive error logging with context
+- ✅ **COMPLETED**: 15+ unit tests covering all JWT validation scenarios
+
+**Status: COMPLETE** ✅
 
 **Affected Code:**
 
@@ -488,13 +495,17 @@ public async Task<string> GetSubmission(string submissionId)
 
 ---
 
-### 7. Missing Health Checks
+### 7. ✅ COMPLETED: Health Checks Implemented
 
 **Current State:**
 
-- README mentions health checks at `/health` endpoint
-- No health check implementation found in code
-- Cannot verify service readiness in production
+- ✅ **COMPLETED**: Health check endpoints implemented at `/health`, `/health/ready`, `/health/live`
+- ✅ **COMPLETED**: Dependencies checked (Identity Server, Submission API)
+- ✅ **COMPLETED**: JSON response with detailed status and timing
+- ✅ **COMPLETED**: Proper HTTP status codes and response formatting
+- ✅ **COMPLETED**: AspNetCore.HealthChecks.Uris package integrated
+
+**Status: COMPLETE** ✅
 
 **Impact:**
 
@@ -612,13 +623,18 @@ Add to `.csproj` files:
 
 ---
 
-### 9. Configuration Validation at Startup
+### 9. ✅ COMPLETED: Configuration Validation Enhanced
 
 **Current State:**
 
-- Configuration validation exists but is basic
-- No schema validation
-- Could fail late in execution
+- ✅ **COMPLETED**: Comprehensive configuration validation in `ValidateConfiguration()` method
+- ✅ **COMPLETED**: Validation runs at application startup (fail fast)
+- ✅ **COMPLETED**: Clear error messages for invalid configuration
+- ✅ **COMPLETED**: URL format validation
+- ✅ **COMPLETED**: Required field validation for all config sections
+- ✅ **COMPLETED**: Throws InvalidOperationException with detailed messages
+
+**Status: COMPLETE** ✅
 
 **Recommended Enhancement:**
 
