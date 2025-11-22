@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using ModelContextProtocol;
 using Moq;
@@ -383,10 +384,11 @@ public class SubmissionApiToolsTests
         // Setup HttpContext with invalid Authorization header
         var mockHttpContext = new Mock<HttpContext>();
         var mockRequest = new Mock<HttpRequest>();
-        var mockHeaders = new Mock<IHeaderDictionary>();
+        var mockHeaders = new HeaderDictionary();
         
-        mockHeaders.Setup(h => h.Authorization).Returns(new Microsoft.Extensions.Primitives.StringValues(authHeader));
-        mockRequest.Setup(r => r.Headers).Returns(mockHeaders.Object);
+        // Add the authorization header to the dictionary
+        mockHeaders["Authorization"] = authHeader;
+        mockRequest.Setup(r => r.Headers).Returns(mockHeaders);
         mockHttpContext.Setup(c => c.Request).Returns(mockRequest.Object);
         
         var mockHttpContextAccessorInvalid = new Mock<IHttpContextAccessor>();
@@ -403,6 +405,7 @@ public class SubmissionApiToolsTests
         );
 
         // Act & Assert - Should throw McpException for invalid auth header
+        // The exception should be thrown from GetSubmissionApiTokenAsync before any HTTP call
         var exception = await Assert.ThrowsAsync<McpException>(
             () => toolsWithInvalidAuth.GetSubmission(submissionId));
         

@@ -75,15 +75,7 @@ public sealed class SubmissionApiTools
         var jsonContent = await response.Content.ReadAsStringAsync();
         
         // Validate JSON by attempting to parse it
-        try
-        {
-            JsonSerializer.Deserialize<JsonElement>(jsonContent);
-        }
-        catch (JsonException)
-        {
-            // Re-throw JsonException to maintain expected behavior
-            throw;
-        }
+        JsonSerializer.Deserialize<JsonElement>(jsonContent);
         
         return jsonContent;
     }
@@ -207,6 +199,12 @@ public sealed class SubmissionApiTools
         }
 
         var currentToken = authHeader["Bearer ".Length..];
+        
+        // Validate that there's actually a token after "Bearer "
+        if (string.IsNullOrWhiteSpace(currentToken))
+        {
+            throw new McpException("No valid bearer token found in request");
+        }
 
         // Since both the MCP server and Submission API are secured by the same Identity Server 4,
         // we can potentially reuse the same token if it has the correct scopes.
