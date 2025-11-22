@@ -1,4 +1,7 @@
 using AmLink.Submission.Mcp.Server.Configuration;
+using AmLink.Submission.Mcp.Server.Telemetry;
+using Microsoft.ApplicationInsights.DependencyCollector;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -17,6 +20,27 @@ var idsConfig = builder.Configuration.GetSection(IdentityServerConfiguration.Sec
 var externalApisConfig = builder.Configuration.GetSection(ExternalApisConfiguration.SectionName).Get<ExternalApisConfiguration>();
 
 ValidateConfiguration(serverConfig, idsConfig, externalApisConfig);
+
+// Configure Application Insights
+var aiConnectionString = builder.Configuration.GetConnectionString("ApplicationInsights");
+if (!string.IsNullOrEmpty(aiConnectionString))
+{
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ConnectionString = aiConnectionString;
+        options.EnableAdaptiveSampling = builder.Configuration.GetValue<bool>("ApplicationInsights:EnableAdaptiveSampling", true);
+        options.EnableQuickPulseMetricStream = builder.Configuration.GetValue<bool>("ApplicationInsights:EnableQuickPulseMetricStream", true);
+    });
+
+    // Add custom telemetry processor for enhanced context
+    builder.Services.AddApplicationInsightsTelemetryProcessor<CustomTelemetryProcessor>();
+
+    // Enable SQL command text instrumentation for dependency tracking
+    builder.Services.ConfigureTelemetryModule<DependencyTrackingTelemetryModule>((module, o) =>
+    {
+        module.EnableSqlCommandTextInstrumentation = true;
+    });
+}
 
 // Inject IOptions configurations
 builder.Services.Configure<IdentityServerConfiguration>(

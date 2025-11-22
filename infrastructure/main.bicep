@@ -78,6 +78,19 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   }
 }
 
+// Application Insights
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: 'appi-${resourceNamePrefix}'
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logAnalytics.id
+    SamplingPercentage: 100
+    RetentionInDays: 90
+  }
+}
+
 // Container Apps Environment with VNet Integration
 resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2023-05-01' = {
   name: 'cae-${resourceNamePrefix}-env'
@@ -175,6 +188,10 @@ resource mcpServerApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'ExternalApis__SubmissionApi__ApiKey'
               secretRef: 'submission-api-key'
+            }
+            {
+              name: 'ConnectionStrings__ApplicationInsights'
+              value: appInsights.properties.ConnectionString
             }
           ]
           resources: {
@@ -288,6 +305,10 @@ resource mcpClientApp 'Microsoft.App/containerApps@2023-05-01' = {
               name: 'IdentityServer__ClientSecret'
               secretRef: 'client-secret'
             }
+            {
+              name: 'ConnectionStrings__ApplicationInsights'
+              value: appInsights.properties.ConnectionString
+            }
           ]
           resources: {
             cpu: json('0.5')
@@ -338,3 +359,5 @@ output serverUrl string = 'https://${mcpServerApp.properties.configuration.ingre
 output clientUrl string = 'https://${mcpClientApp.properties.configuration.ingress.fqdn}'
 output resourceGroupName string = resourceGroup().name
 output environmentName string = environmentName
+output applicationInsightsConnectionString string = appInsights.properties.ConnectionString
+output applicationInsightsInstrumentationKey string = appInsights.properties.InstrumentationKey
