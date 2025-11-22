@@ -3,6 +3,7 @@
 ## Docker Compose Files
 
 ### 1. **Production Configuration**
+
 ```bash
 # Start production containers
 docker-compose up -d
@@ -13,6 +14,7 @@ docker-compose up -d
 ```
 
 ### 2. **Debug Configuration**
+
 ```bash
 # Start debug containers with vsdbg debugger
 docker-compose -f docker-compose.debug.yml up -d
@@ -24,8 +26,10 @@ docker-compose -f docker-compose.debug.yml up -d
 
 ## VS Code Remote Debugging
 
-### Setup Steps:
+### Setup Steps
+
 1. **Start debug containers**:
+
    ```bash
    docker-compose -f docker-compose.debug.yml up -d
    ```
@@ -39,7 +43,8 @@ docker-compose -f docker-compose.debug.yml up -d
 
 4. **Debug away!** Your breakpoints should hit when the code executes
 
-### Available Debug Configurations:
+### Available Debug Configurations
+
 - **Debug Client Container**: Attach to amlink-mcp-client
 - **Debug Server Container**: Attach to amlink-mcp-server  
 - **Debug Both (Client + Server)**: Debug both simultaneously
@@ -64,17 +69,21 @@ docker ps
 ```
 
 ## Environment Variables
+
 Set these in your environment or `.env` file:
+
 ```
 IDENTITY_SERVER_CLIENT_SECRET=your-secret-here
 OPENAI_API_KEY=your-openai-key-here
 ```
 
 ## Application URLs
-- **Client**: http://localhost:5000
-- **Server**: http://localhost:7072
-- **Server Metadata**: http://localhost:7072/.well-known/oauth-protected-resource
+
+- **Client**: <http://localhost:5000>
+- **Server**: <http://localhost:7072>
+- **Server Metadata**: <http://localhost:7072/.well-known/oauth-protected-resource>
 
 ## VS Code Extensions Needed
+
 - C# Dev Kit
 - Docker

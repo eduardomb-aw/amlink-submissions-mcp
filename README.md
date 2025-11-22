@@ -1,6 +1,8 @@
 # AmLink Submissions MCP
 
-A Model Context Protocol (MCP) server and client implementation for AmLink submissions API integration, built with ASP.NET Core and secured with Identity Server 4.
+A Model Context Protocol (MCP) server and client implementation for AmLink
+submissions API integration, built with ASP.NET Core and secured with
+Identity Server 4.
 
 ## 🏗️ Architecture
 
@@ -12,6 +14,7 @@ A Model Context Protocol (MCP) server and client implementation for AmLink submi
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - [.NET 10.0 SDK](https://dotnet.microsoft.com/download)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop)
 - [Git](https://git-scm.com/)
@@ -19,24 +22,28 @@ A Model Context Protocol (MCP) server and client implementation for AmLink submi
 ### Development Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/your-username/amlink-submissions-mcp.git
    cd amlink-submissions-mcp
    ```
 
 2. **Set up environment variables**
+
    ```bash
    cp .env.example .env
    # Edit .env with your actual values
    ```
 
 3. **Generate HTTPS certificates (for HTTPS development)**
+
    ```bash
    dotnet dev-certs https -ep ~/.aspnet/https/aspnetapp.pfx -p "YourSecurePassword123!"
    dotnet dev-certs https --trust
    ```
 
 4. **Start the services**
+
    ```bash
    # Development with hot reload
    docker-compose up -d
@@ -69,7 +76,8 @@ This project uses a **two-stage workflow** approach for optimal efficiency:
 
 ### Production Deployment
 
-**Option 1: From Registry (Recommended)**
+#### Option 1: From Registry (Recommended)
+
 ```bash
 # 1. Publish images via GitHub Actions
 # Go to Actions → "Build and Push Container Images" → Run workflow
@@ -78,13 +86,15 @@ This project uses a **two-stage workflow** approach for optimal efficiency:
 .\scripts\deploy.ps1 deploy -Tag "latest"
 ```
 
-**Option 2: Local Build**
+#### Option 2: Local Build
+
 ```bash
 # Build and deploy locally
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 📖 **Full deployment guide**: See [`docs/registry-deployment.md`](docs/registry-deployment.md)
+
 - **Server (HTTP)**: <http://localhost:8080>
 
 ## 📁 Project Structure
@@ -105,6 +115,7 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ### Environment Variables
 
 **Automatically Configured in Azure (via deployment pipeline):**
+
 - `IdentityServer__*` - OAuth 2.0/OpenID Connect settings
 - `McpServer__*` - MCP server URLs and configuration
 - `ExternalApis__*` - AmLink API endpoints and settings
@@ -114,14 +125,16 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 | Variable | Description | Location |
 |----------|-------------|----------|
-| `OPENAI_API_KEY` | OpenAI API key for LLM integration | Azure Portal (both apps) |
-| `IDENTITY_SERVER_CLIENT_SECRET` | OAuth client secret (if needed) | Azure Portal (optional) |
+| `OPENAI_API_KEY` | OpenAI API key for LLM integration | Azure Portal |
+| `IDENTITY_SERVER_CLIENT_SECRET` | OAuth client secret | Azure Portal |
 
 ### Docker Compose Configurations
 
 - **Base** (`docker-compose.yml`): Production-ready configuration
-- **Override** (`docker-compose.override.yml`): Development settings with hot reload
-- **Production** (`docker-compose.prod.yml`): Enhanced production features (health checks, resource limits)
+- **Override** (`docker-compose.override.yml`): Development settings with
+  hot reload
+- **Production** (`docker-compose.prod.yml`): Enhanced production features
+  (health checks, resource limits)
 
 ## ⚙️ Deployment Configuration
 
@@ -130,22 +143,26 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 The deployment pipeline automatically configures:
 
 **Client Application:**
+
 - Identity Server OAuth settings (client ID, scopes, redirect URIs)
 - MCP server communication URLs
 - Cross-app authentication configuration
 
 **Server Application:**
+
 - Identity Server authentication settings
 - External API endpoints (AmLink Submission API)
 - MCP server documentation URLs
 
 **Infrastructure:**
+
 - VNet integration with ArchPlayGroundAFRG-1 (East US 2)
 - Subnet delegation for Web Apps connectivity
 - Internal resource access configuration
 - OAuth callback and response handling
 
 **Manual Setup (Sensitive Data):**
+
 - `OPENAI_API_KEY`: Set in Azure Portal → Web App → Configuration
 - Optional OAuth secrets: Configure if custom authentication is needed
 
@@ -191,6 +208,7 @@ docker-compose up -d --build
 
 1. **Set production environment variables**
 2. **Deploy with production configuration**
+
    ```bash
    docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
    ```
@@ -198,6 +216,7 @@ docker-compose up -d --build
 ### CI/CD Pipeline
 
 This project includes GitHub Actions workflows for:
+
 - ✅ Automated testing
 - 🔨 Docker image building
 - 🚀 Container registry publishing
@@ -211,10 +230,13 @@ This project includes GitHub Actions workflows for:
 
 ### Health Check Endpoints
 
-Both the server and client applications provide health check endpoints for monitoring and orchestration:
+Both the server and client applications provide health check endpoints for
+monitoring and orchestration:
 
 #### `/health` - Comprehensive Health Status
+
 Returns detailed health information including all dependency checks:
+
 ```json
 {
   "status": "Healthy",
@@ -243,7 +265,10 @@ Returns detailed health information including all dependency checks:
 ```
 
 #### `/health/ready` - Readiness Probe
-Returns simple status indicating if the application is ready to accept traffic:
+
+Returns simple status indicating if the application is ready to accept
+traffic:
+
 ```json
 {
   "status": "Healthy"
@@ -251,7 +276,9 @@ Returns simple status indicating if the application is ready to accept traffic:
 ```
 
 #### `/health/live` - Liveness Probe
+
 Returns simple status indicating if the application is running:
+
 ```json
 {
   "status": "Healthy"
@@ -259,16 +286,19 @@ Returns simple status indicating if the application is running:
 ```
 
 **Health Status Values:**
+
 - `Healthy` - All checks passed
 - `Degraded` - Some non-critical checks failed (e.g., external dependencies)
 - `Unhealthy` - Critical checks failed
 
 **Server Health Checks:**
+
 - Self check - Application is running
 - Identity Server - OAuth provider availability
 - Submission API - External API availability
 
 **Client Health Checks:**
+
 - Self check - Application is running
 - MCP Server - Backend server availability
 - Identity Server - OAuth provider availability
@@ -289,23 +319,43 @@ We welcome contributions! Here's how to get started:
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes following our [coding standards](.github/copilot-instructions.md)
 4. Add tests for your changes
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+5. **Run pre-push validation** (see below)
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
+
+### Pre-Push Validation
+
+Before pushing any changes, **always** run our pre-push validation to catch issues locally:
+
+```powershell
+# One-time setup (installs required tools)
+.\scripts\setup-validation-tools.ps1
+
+# Before every push (mirrors GitHub Actions exactly)
+.\scripts\pre-push-validation.ps1
+```
+
+This prevents PR validation failures and provides immediate feedback in 30-60 seconds locally.
 
 ### Documentation
 
-- **[TASKS.md](TASKS.md)** - Prioritized improvement tasks with detailed specifications
-- **[POTENTIAL-IMPROVEMENTS.md](docs/POTENTIAL-IMPROVEMENTS.md)** - Comprehensive analysis of improvement opportunities
-- **[temp_task-implementation-guide.md](docs/temp_task-implementation-guide.md)** - Step-by-step guide for implementing tasks
+- **[TASKS.md](TASKS.md)** - Prioritized improvement tasks with detailed
+  specifications
+- **[POTENTIAL-IMPROVEMENTS.md](docs/POTENTIAL-IMPROVEMENTS.md)** -
+  Comprehensive analysis of improvement opportunities
+- **[temp_task-implementation-guide.md](docs/temp_task-implementation-guide.md)**
+  \- Step-by-step guide for implementing tasks
 - **[DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Development setup and guidelines
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE)
+file for details.
 
 ## 🆘 Support
 
 - 📧 **Issues**: Use GitHub Issues for bug reports and feature requests
 - 📚 **Documentation**: Check the `/docs` folder for detailed guides
-- 💬 **Discussions**: Use GitHub Discussions for questions and community support
+- 💬 **Discussions**: Use GitHub Discussions for questions and community
+  support

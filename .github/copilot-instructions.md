@@ -189,8 +189,9 @@ public async Task MethodName_Scenario_ExpectedBehavior()
 4. **Commit Failing Tests**: Push to feature branch - PR validation will fail (expected)
 5. **Implement Code**: Write minimal code to make tests pass
 6. **Refactor**: Improve code quality while keeping tests green
-7. **Validate**: Ensure all tests pass and PR validation succeeds
-8. **Merge**: Only merge when all tests pass - main branch stays clean
+7. **Pre-Push Validation**: **MANDATORY** - Run `.\scripts\pre-push-validation.ps1` before pushing
+8. **Validate**: Ensure all tests pass and PR validation succeeds
+9. **Merge**: Only merge when all tests pass - main branch stays clean
 
 ### Branch Protection Strategy
 - **Main Branch**: Always has passing tests - never merge failing tests
@@ -353,6 +354,19 @@ Required environment variables (see `.env.example`):
 
 ## Common Tasks
 
+### Pre-Push Validation
+**Always run before pushing any changes:**
+
+```powershell
+# Run complete validation (mirrors GitHub Actions exactly)
+.\scripts\pre-push-validation.ps1
+
+# First-time setup (install required tools)
+.\scripts\setup-validation-tools.ps1
+```
+
+**Required for every commit to prevent PR validation failures.**
+
 ### Adding a New MCP Tool
 1. Create a new class in `src/amlink-submissions-mcp-server/Tools/`
 2. Implement the tool following MCP SDK patterns
@@ -411,6 +425,7 @@ mockHeaders.Setup(h => h.TryGetValue("Authorization", out It.Ref<Microsoft.Exten
         return true;
     });
 ```
+**Best Practice**: Always use `TryGetValue()` method in production code instead of direct dictionary access to avoid KeyNotFoundException. This pattern is more robust and testable.
 
 #### Issue: "Sequence contains no elements" in HTTP request validation tests
 **Root Cause**: User Agent header not configured in test HttpClient setup.
@@ -599,6 +614,51 @@ docker-compose down && docker-compose up -d
 - [ ] Port mappings don't conflict with host services
 - [ ] OAuth redirect URIs match Identity Server configuration exactly
 
+## Pre-Push Validation
+
+### Local Validation Requirements
+To prevent PR validation failures, **ALWAYS** run pre-push validation before pushing changes:
+
+```powershell
+# One-time setup (installs required tools)
+.\scripts\setup-validation-tools.ps1
+
+# Before every push (mirrors PR validation exactly)
+.\scripts\pre-push-validation.ps1
+```
+
+### Pre-Push Validation Steps
+The pre-push validation script mirrors the GitHub Actions PR validation workflow exactly:
+
+#### .NET Validation
+- **Dependency Restore**: `dotnet restore`
+- **Code Formatting**: `dotnet format --verify-no-changes --verbosity diagnostic`
+- **Build**: `dotnet build --no-restore --configuration Release`
+- **Tests**: `dotnet test --no-build --configuration Release`
+- **Docker Builds**: Test both server and client Docker builds
+- **Docker Compose**: Validate all compose configurations
+
+#### Linting & Security
+- **Markdown**: markdownlint validation on all .md files using `.markdownlint.json` configuration
+- **Dockerfiles**: hadolint validation on all Dockerfiles (DL3008, DL4006 rules enforced)
+- **YAML/JSON**: Basic syntax validation
+- **Required Tools**: markdownlint-cli, hadolint, Docker, .NET SDK
+
+**Markdownlint Configuration Strategy**: The `.markdownlint.json` file focuses on critical structural issues while allowing flexibility on verbose formatting rules. Key disabled rules: line-length (MD013), blanks-around-headings (MD022), ordered-list-prefix (MD029) to balance validation with practicality.
+
+### Pre-Push Validation Rules
+1. **Mandatory Usage**: Never push without running `.\scripts\pre-push-validation.ps1`
+2. **Tool Installation**: Run `.\scripts\setup-validation-tools.ps1` once per environment
+3. **Zero Tolerance**: Script must pass with exit code 0 before pushing
+4. **Complete Coverage**: Script validates 100% of what GitHub Actions PR validation checks
+5. **Time Investment**: 30-60 seconds locally vs. hours of PR iteration cycles
+
+### Pre-Push Validation Benefits
+- **Immediate Feedback**: Catch issues in seconds instead of waiting for CI/CD
+- **Consistent Environment**: Matches exactly what GitHub Actions will check
+- **Faster Development**: Prevents push → fail → fix → push cycles
+- **Quality Assurance**: Ensures all code meets project standards before submission
+
 ## Pull Request Workflow Troubleshooting
 
 ### Common PR Validation Failures and Solutions
@@ -641,6 +701,30 @@ git commit -m "Fix code formatting issues"
 git push
 ```
 **Common causes**: Mixed tabs/spaces, incorrect indentation, trailing whitespace, inconsistent line endings. Always run `dotnet format` locally before pushing changes.
+
+#### Issue: "Files should end with a single newline character" (MD047)
+**Root Cause**: Markdown files missing trailing newlines, commonly affects README.md files in subdirectories.
+**Solution**: Add trailing newline to affected files:
+```powershell
+# Fix specific file
+$content = Get-Content "path/to/file.md" -Raw; $content += "`n"; Set-Content "path/to/file.md" -Value $content -NoNewline
+
+# Or use markdownlint auto-fix (when available)
+markdownlint --fix "path/to/file.md"
+```
+**Prevention**: Configure editor to automatically add trailing newlines, or use our markdownlint configuration which focuses on critical structural issues.
+
+#### Issue: Pre-push validation fails on markdown but individual file checks pass
+**Root Cause**: The pre-push validation script scans recursively through all folders for markdown files, which may include files in subdirectories not covered by your current working directory test.
+**Solution**: Check all markdown files that the script validates:
+```powershell
+# See what files the script actually validates
+Get-ChildItem -Recurse -Filter "*.md" | Where-Object { $_.FullName -notlike "*node_modules*" -and $_.FullName -notlike "*bin*" -and $_.FullName -notlike "*obj*" } | Select-Object Name, FullName
+
+# Test each file individually
+markdownlint "full/path/to/each/file.md"
+```
+**Common culprits**: Files in `docker/`, `docs/`, and `.github/` subdirectories that may have different formatting issues.
 
 ### PR Merge Conflict Resolution Workflow
 1. **Switch to feature branch**: `git checkout feature-branch`

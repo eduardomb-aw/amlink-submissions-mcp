@@ -21,6 +21,7 @@ Currently, the repository has only ~7% test coverage with 1 test file containing
 #### Scope
 
 **Unit Tests (Priority 1):**
+
 - [ ] `SubmissionApiTools.GetSubmission()`
 - [ ] `SubmissionApiTools.CreateSubmission()`
 - [ ] `SubmissionApiTools.ListSubmissions()`
@@ -30,11 +31,13 @@ Currently, the repository has only ~7% test coverage with 1 test file containing
 - [ ] Configuration validation logic
 
 **Integration Tests (Priority 2):**
+
 - [ ] End-to-end MCP tool invocation
 - [ ] OAuth flow with mock Identity Server
 - [ ] Submission API integration with mock backend
 
 **Test Infrastructure:**
+
 - [ ] Add test coverage reporting (coverlet)
 - [ ] Set up test data builders
 - [ ] Create mock/fake implementations of external services

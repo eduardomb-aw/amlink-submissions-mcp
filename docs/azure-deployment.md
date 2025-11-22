@@ -5,6 +5,7 @@ This guide walks through the automated deployment to Azure Web Apps for Containe
 ## 🎯 Current Deployment Architecture
 
 **Production Environment:**
+
 - **Subscription**: Architecture Playground (`1f47ba90-a3ed-4e70-a902-570616cb62b0`)
 - **Location**: East US 2
 - **Resource Group**: `rg-amlink-submissions-mcp-staging`
@@ -40,11 +41,13 @@ This guide walks through the automated deployment to Azure Web Apps for Containe
 ### 1. Azure Prerequisites
 
 **VNet Integration:**
+
 - Uses existing VNet: `ArchPlayGroundAFRG-1` in resource group `NewAFormentiRG`
 - Provides secure network access for downstream API calls
 - Subnet: `5` (10.202.58.128/25)
 
 **Create Azure Service Principal:**
+
 ```bash
 # Login to Azure
 az login
@@ -64,11 +67,13 @@ az ad sp create-for-rbac \
 Add these secrets to your GitHub repository (Settings → Secrets and variables → Actions):
 
 **Azure Authentication:**
+
 - `AZURE_CLIENT_ID` - From service principal output
 - `AZURE_TENANT_ID` - From service principal output  
 - `AZURE_SUBSCRIPTION_ID` - Your Azure subscription ID
 
 **Application Configuration:**
+
 - `CLIENT_SECRET` - Secure client secret for Identity Server
 - `SUBMISSION_API_KEY` - API key for external submission service
 - `CERT_PASSWORD` - Certificate password (optional, for custom certs)
@@ -76,8 +81,9 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 ### 3. Deploy to Azure
 
 **Step 1: Provision Infrastructure**
+
 1. Go to GitHub Actions
-2. Select "Provision Web Apps Infrastructure" 
+2. Select "Provision Web Apps Infrastructure"
 3. Click "Run workflow"
 4. Choose environment (staging/production) and location
 5. This automatically creates:
@@ -87,17 +93,20 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
    - Basic container registry authentication
 
 **Step 2: Deploy Applications**
+
 1. Select "Deploy to Web Apps for Containers"
 2. Choose environment and image tag
 3. This configures all environment variables and deploys containers
 
 **Option 2: Automatic on Release**
+
 - Creates staging deployment for pre-releases
 - Creates production deployment for stable releases
 
 ## 📋 Deployment Environments
 
 ### **Staging Environment**
+
 - **Resource Group:** `rg-amlink-submissions-mcp-staging`
 - **Client Web App:** `app-amlink-submissions-mcp-staging-client`
 - **Server Web App:** `app-amlink-submissions-mcp-staging-server`
@@ -107,6 +116,7 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 - **Server URL:** `https://app-amlink-submissions-mcp-staging-server.azurewebsites.net`
 
 ### **Production Environment**  
+
 - **Resource Group:** `rg-amlink-submissions-mcp-prod`
 - **Client Web App:** `app-amlink-submissions-mcp-prod-client`
 - **Server Web App:** `app-amlink-submissions-mcp-prod-server`
@@ -118,11 +128,13 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 ## 🔧 Infrastructure Components
 
 ### **App Service Plan**
+
 - **SKU:** B1 (Basic) Linux containers
 - **Location:** East US 2
 - **Shared:** Both client and server Web Apps
 
 ### **VNet Integration**
+
 - **VNet:** ArchPlayGroundAFRG-1 (NewAFormentiRG resource group)
 - **Subnet:** Subnet "5" (10.202.58.128/25)
 - **Delegation:** Microsoft.Web/serverFarms (automatic)
@@ -130,18 +142,21 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 - **Benefits:** Internal resource access, network security
 
 ### **MCP Server Web App**
+
 - **Image:** `ghcr.io/eduardomb-aw/amlink-submissions-mcp-server`
 - **Port:** 8080 (HTTP), auto-HTTPS via Azure
 - **VNet:** Integrated with internal network access
 - **Configuration:** Automatic environment variable setup
 
 ### **MCP Client Web App**
+
 - **Image:** `ghcr.io/eduardomb-aw/amlink-submissions-mcp-client`
 - **Port:** 8080 (HTTP), auto-HTTPS via Azure
 - **VNet:** Integrated with internal network access
 - **Configuration:** Automatic Identity Server and MCP settings
 
 ### **Health Monitoring**
+
 - **Liveness Probes:** Ensure containers are running
 - **Readiness Probes:** Ensure containers are ready for traffic
 - **Log Analytics:** Centralized logging and monitoring
@@ -149,6 +164,7 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 ## ⚡ Key Features
 
 ### **Auto-Scaling**
+
 ```yaml
 # Web Apps auto-scaling configured via App Service Plan
 # Scale up/out rules configured in Azure Portal
@@ -156,6 +172,7 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 ```
 
 ### **Health Checks**
+
 ```yaml
 # Web Apps health checks via /health endpoint
 # Configured in deployment pipeline
@@ -163,6 +180,7 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 ```
 
 ### **Secret Management**
+
 - Secrets stored securely in Container Apps
 - Referenced from GitHub secrets during deployment
 - No secrets in code or configuration files
@@ -172,6 +190,7 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 ### **Environment-Specific Configuration**
 
 **Staging (`staging.parameters.json`):**
+
 ```json
 {
   "environmentName": { "value": "staging" },
@@ -181,6 +200,7 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 ```
 
 **Production (`production.parameters.json`):**
+
 ```json
 {
   "environmentName": { "value": "prod" },
@@ -192,12 +212,14 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 ### **Resource Sizing**
 
 **Development/Staging:**
+
 - CPU: 0.5 cores per replica
 - Memory: 1Gi per replica
 - Min replicas: 1
 - Max replicas: 5
 
 **Production:**
+
 - CPU: 1.0 cores per replica (modify in `main.bicep`)
 - Memory: 2Gi per replica
 - Min replicas: 2
@@ -206,12 +228,14 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 ## 📊 Monitoring & Troubleshooting
 
 ### **Azure Portal**
+
 1. Navigate to your resource group
 2. View Web Apps for deployment status
 3. Check Log Stream for application logs
 4. Monitor performance and metrics
 
 ### **Application Logs**
+
 ```bash
 # View logs via Azure CLI
 az webapp log tail \
@@ -222,16 +246,19 @@ az webapp log tail \
 ### **Common Issues**
 
 **Image Pull Errors:**
+
 - Verify GitHub token has packages:read permission
 - Ensure container images are published
 - Check registry credentials in secrets
 
 **Health Check Failures:**
+
 - Verify `/health` endpoints are implemented
 - Check application startup time vs probe delays
 - Review application logs for errors
 
 **Scaling Issues:**
+
 - Monitor CPU/memory usage in Azure Portal
 - Adjust scaling rules in `main.bicep`
 - Verify health probes are passing
@@ -239,16 +266,19 @@ az webapp log tail \
 ## 🔒 Security Considerations
 
 ### **Network Security**
+
 - HTTPS enforced for all external traffic
 - Internal communication between apps
 - No direct internet access to containers
 
 ### **Secret Management**
+
 - All secrets stored in Azure Key Vault integration
 - No secrets in container images or logs
 - Rotation supported via GitHub Actions
 
 ### **Container Security**
+
 - Base images scanned for vulnerabilities
 - Running as non-root user
 - Minimal attack surface
@@ -256,11 +286,13 @@ az webapp log tail \
 ## 💰 Cost Optimization
 
 ### **Pricing Model**
+
 - **Pay per use:** Only pay for actual resource consumption
 - **Auto-scaling:** Automatically scales down to minimum during low usage
 - **No idle costs:** Unlike VMs, no costs when not processing requests
 
 ### **Cost-Saving Tips**
+
 1. **Right-size resources:** Start with 0.5 CPU, 1Gi memory
 2. **Optimize scaling:** Set appropriate min/max replicas
 3. **Use staging sparingly:** Spin down staging when not testing
@@ -269,6 +301,7 @@ az webapp log tail \
 ## 🚀 Advanced Scenarios
 
 ### **Custom Domains**
+
 ```bash
 # Add custom domain to Container App
 az containerapp hostname add \
@@ -278,11 +311,13 @@ az containerapp hostname add \
 ```
 
 ### **Blue-Green Deployments**
+
 - Use Container Apps revisions
 - Split traffic between versions
 - Instant rollback capability
 
 ### **Multi-Region Deployment**
+
 - Deploy to multiple Azure regions
 - Use Azure Front Door for global load balancing
 - Configure geo-replication for data

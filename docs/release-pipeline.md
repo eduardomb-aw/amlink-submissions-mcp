@@ -23,12 +23,15 @@ graph TD
 ## 📋 Available Workflows
 
 ### 1. **Auto Release from Tag** (`auto-release.yml`)
+
 **Purpose**: Automatically creates GitHub releases when version tags are pushed
 
 **Triggers:**
+
 - Push tags matching `v*` (e.g., `v0.0.1`, `v1.2.3`, `v2.0.0-beta`)
 
 **Features:**
+
 - ✅ Automatic release notes generation
 - ✅ Categorized commit messages (features, fixes, CI/CD)
 - ✅ Contributor attribution
@@ -36,6 +39,7 @@ graph TD
 - ✅ Deployment instructions included
 
 **Usage:**
+
 ```bash
 # Create and push a version tag
 git tag v1.0.0 -m "Release version 1.0.0"
@@ -43,14 +47,17 @@ git push origin v1.0.0
 ```
 
 ### 2. **Build and Push Container Images** (`build-and-push.yml`)
+
 **Purpose**: Publishes validated container images to the registry
 
 **Triggers:**
+
 - Version tags (`v*`)
 - Manual workflow dispatch
 - GitHub releases
 
 **Features:**
+
 - ✅ CI status validation (ensures tests passed)
 - ✅ Multi-architecture builds (AMD64, ARM64)
 - ✅ Container security scanning
@@ -58,12 +65,15 @@ git push origin v1.0.0
 - ✅ GitHub Container Registry integration
 
 ### 3. **Deployment Validation** (`deployment-validation.yml`)
+
 **Purpose**: Tests container images in a realistic deployment environment
 
 **Triggers:**
+
 - Manual workflow dispatch
 
 **Features:**
+
 - ✅ Image existence verification
 - ✅ Security vulnerability scanning
 - ✅ Full deployment testing with Docker Compose
@@ -72,6 +82,7 @@ git push origin v1.0.0
 - ✅ Detailed logging and artifact collection
 
 **Usage:**
+
 ```bash
 # Validate a specific image tag
 # Go to GitHub Actions → "Deployment Validation" → Run workflow
@@ -79,18 +90,22 @@ git push origin v1.0.0
 ```
 
 ### 4. **Hotfix Release** (`hotfix.yml`)
+
 **Purpose**: Creates hotfix branches and manages emergency releases
 
 **Triggers:**
+
 - Manual workflow dispatch
 
 **Features:**
+
 - ✅ Automated hotfix branch creation
 - ✅ Version validation
 - ✅ Structured hotfix workflow
 - ✅ Integration with main release pipeline
 
 **Usage:**
+
 ```bash
 # Create a hotfix via GitHub Actions
 # Go to Actions → "Hotfix Release" → Run workflow
@@ -102,6 +117,7 @@ git push origin v1.0.0
 ### **Standard Release (Feature/Maintenance)**
 
 1. **Development & Testing**
+
    ```bash
    # Make changes on feature branch
    git checkout -b feature/new-feature
@@ -116,6 +132,7 @@ git push origin v1.0.0
    - Code review process
 
 3. **Merge to Main**
+
    ```bash
    # After PR approval and merge
    git checkout main
@@ -123,6 +140,7 @@ git push origin v1.0.0
    ```
 
 4. **Create Release**
+
    ```bash
    # Tag the release
    git tag v1.1.0 -m "Release v1.1.0 - New features and improvements"
@@ -143,6 +161,7 @@ git push origin v1.0.0
    - Automated branch creation
 
 2. **Apply Fix**
+
    ```bash
    git checkout hotfix/v1.0.1
    # ... apply critical fix ...
@@ -155,6 +174,7 @@ git push origin v1.0.0
    - Merge to main branch
 
 4. **Release**
+
    ```bash
    # Tag the hotfix
    git tag v1.0.1 -m "Hotfix v1.0.1 - Critical security fix"
@@ -164,6 +184,7 @@ git push origin v1.0.0
 ### **Pre-Release/Beta Testing**
 
 1. **Create Pre-release Tag**
+
    ```bash
    git tag v2.0.0-beta -m "Beta release v2.0.0-beta"
    git push origin v2.0.0-beta
@@ -175,6 +196,7 @@ git push origin v1.0.0
    - Collect feedback
 
 3. **Promote to Stable**
+
    ```bash
    git tag v2.0.0 -m "Stable release v2.0.0"
    git push origin v2.0.0
@@ -183,6 +205,7 @@ git push origin v1.0.0
 ## 🔧 Configuration & Customization
 
 ### **Environment Variables**
+
 ```yaml
 # Global settings
 REGISTRY: ghcr.io
@@ -193,11 +216,13 @@ ENVIRONMENT: staging  # or test, demo
 ```
 
 ### **Tagging Strategy**
+
 - **Stable releases**: `v1.0.0`, `v1.2.3`
 - **Pre-releases**: `v1.0.0-alpha`, `v1.0.0-beta`, `v1.0.0-rc1`
 - **Hotfixes**: `v1.0.1`, `v1.0.2`
 
 ### **Release Notes Categories**
+
 - ✨ **Features**: `feat:` commits
 - 🐛 **Bug Fixes**: `fix:` commits  
 - 🔧 **CI/CD**: `ci:` commits
@@ -206,18 +231,21 @@ ENVIRONMENT: staging  # or test, demo
 ## 📊 Monitoring & Observability
 
 ### **Workflow Artifacts**
+
 - 🔒 Security scan results
 - 📋 Deployment logs
 - 🧪 Test results
 - 📦 Deployment packages
 
 ### **GitHub Integration**
+
 - 📈 Release metrics in GitHub Insights
 - 🔒 Security alerts in Security tab
 - 📦 Container images in Packages
 - 📋 Workflow status in Actions
 
 ### **Notifications**
+
 - ✅ Successful releases
 - ❌ Failed deployments
 - 🔒 Security vulnerabilities
@@ -226,17 +254,20 @@ ENVIRONMENT: staging  # or test, demo
 ## 🛡️ Security & Compliance
 
 ### **Security Scanning**
+
 - **Source code**: Trivy filesystem scanning
 - **Container images**: Trivy image scanning
 - **Dependencies**: Automated vulnerability detection
 - **Secrets**: GitHub secret scanning
 
 ### **Access Control**
+
 - **Repository permissions**: Write access for releases
 - **Package registry**: Automated publishing
 - **Workflow triggers**: Protected branch rules
 
 ### **Audit Trail**
+
 - **Git tags**: Immutable release markers
 - **Workflow logs**: Complete deployment history
 - **Artifacts**: Evidence of security scans
@@ -247,6 +278,7 @@ ENVIRONMENT: staging  # or test, demo
 ### **Common Issues**
 
 **Release Creation Failed**
+
 ```bash
 # Check if tag already exists
 git tag -l | grep v1.0.0
@@ -256,6 +288,7 @@ git tag -l | grep v1.0.0
 ```
 
 **Image Publishing Failed**
+
 ```bash
 # Check registry permissions
 # Verify GITHUB_TOKEN has packages:write permission
@@ -265,6 +298,7 @@ git tag -l | grep v1.0.0
 ```
 
 **Deployment Validation Failed**
+
 ```bash
 # Check image availability
 docker manifest inspect ghcr.io/owner/repo:tag
@@ -274,6 +308,7 @@ curl -f http://localhost:8080/health
 ```
 
 **Hotfix Process Issues**
+
 ```bash
 # Ensure proper version format
 # Use semantic versioning: v1.0.1
@@ -285,24 +320,28 @@ curl -f http://localhost:8080/health
 ## 📈 Best Practices
 
 ### **Version Management**
+
 - 🔢 Use semantic versioning (MAJOR.MINOR.PATCH)
 - 📝 Write descriptive commit messages
 - 🏷️ Tag releases consistently
 - 📋 Maintain changelog
 
 ### **Testing Strategy**
+
 - ✅ Run full CI before releases
 - 🧪 Use deployment validation for major releases
 - 🔄 Test rollback procedures
 - 📊 Monitor post-deployment metrics
 
 ### **Documentation**
+
 - 📖 Keep release notes updated
 - 🔗 Include deployment instructions
 - 📚 Document breaking changes
 - 🎯 Highlight new features
 
 ### **Security**
+
 - 🔒 Scan all releases for vulnerabilities
 - 🔐 Use secure container base images
 - 📋 Review security reports

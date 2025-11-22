@@ -5,6 +5,7 @@ This document outlines the tasks to implement improvements identified in [temp_p
 ## Task Organization
 
 Tasks are organized by priority and phase:
+
 - **Phase 1 (High Priority)**: Foundation - Testing, validation, and logging
 - **Phase 2 (Medium Priority)**: Reliability - Security, resilience, and observability
 - **Phase 3 (Low Priority)**: Quality - Code standards and maintenance
@@ -21,6 +22,7 @@ Tasks are organized by priority and phase:
 **Related Issue:** #2
 
 #### Description
+
 Currently, the repository has only ~7% test coverage with 1 test file containing 4 placeholder tests for 15 production files. This task aims to achieve 80%+ code coverage as specified in Issue #2.
 
 #### Implementation Guidelines
@@ -48,6 +50,7 @@ Currently, the repository has only ~7% test coverage with 1 test file containing
    - Add performance/load tests
 
 #### Acceptance Criteria
+
 - [ ] Unit tests for all MCP tools with ≥90% coverage
 - [ ] Unit tests for all services with ≥90% coverage
 - [ ] Integration tests for critical workflows
@@ -56,6 +59,7 @@ Currently, the repository has only ~7% test coverage with 1 test file containing
 - [ ] All tests passing in CI pipeline
 
 #### Files to Create/Modify
+
 - `src/amlink-submissions-mcp.Tests/Tools/SubmissionApiToolsTests.cs` (new)
 - `src/amlink-submissions-mcp.Tests/Services/McpServiceTests.cs` (new)
 - `src/amlink-submissions-mcp.Tests/Services/TokenServiceTests.cs` (new)
@@ -65,6 +69,7 @@ Currently, the repository has only ~7% test coverage with 1 test file containing
 - `.github/workflows/ci-cd.yml` (add coverage reporting)
 
 #### Dependencies
+
 - None
 
 ---
@@ -76,6 +81,7 @@ Currently, the repository has only ~7% test coverage with 1 test file containing
 **Labels:** `enhancement`, `security`, `validation`, `high-priority`
 
 #### Description
+
 Currently, MCP tool methods in `SubmissionApiTools.cs` accept parameters without validation. This can lead to NullReferenceException, poor error messages, and potential security risks.
 
 #### Implementation Guidelines
@@ -87,6 +93,7 @@ Currently, MCP tool methods in `SubmissionApiTools.cs` accept parameters without
    - `DeclineSubmission(string submissionId, string reason)`: Validate both parameters
 
 2. **Validation patterns to implement:**
+
    ```csharp
    if (string.IsNullOrWhiteSpace(submissionId))
        throw new ArgumentException("Submission ID cannot be null or empty", nameof(submissionId));
@@ -108,16 +115,19 @@ Currently, MCP tool methods in `SubmissionApiTools.cs` accept parameters without
 3. **Consider creating a validation helper class** for reusable validation logic
 
 #### Acceptance Criteria
+
 - [ ] All MCP tool methods validate their input parameters
 - [ ] Proper ArgumentException thrown with descriptive messages
 - [ ] Unit tests for validation edge cases
 - [ ] Documentation updated with parameter requirements
 
 #### Files to Modify
+
 - `src/amlink-submissions-mcp-server/Tools/SubmissionApiTools.cs` (add validation to 4 methods)
 - `src/amlink-submissions-mcp.Tests/Tools/SubmissionApiToolsTests.cs` (add validation tests)
 
 #### Dependencies
+
 - Should be implemented before or alongside Task 1 (testing)
 
 ---
@@ -129,11 +139,13 @@ Currently, MCP tool methods in `SubmissionApiTools.cs` accept parameters without
 **Labels:** `enhancement`, `logging`, `high-priority`
 
 #### Description
+
 There are 15 instances of `Console.WriteLine` in production code that should be replaced with structured logging using `ILogger`. This prevents proper log aggregation, filtering, and integration with monitoring tools.
 
 #### Implementation Guidelines
 
 1. **Update `DisplayStartupInfo()` method** in both server and client:
+
    ```csharp
    static void DisplayStartupInfo(
        ServerConfiguration serverConfig, 
@@ -158,6 +170,7 @@ There are 15 instances of `Console.WriteLine` in production code that should be 
    - `LogError` for errors and exceptions
 
 #### Acceptance Criteria
+
 - [ ] No `Console.WriteLine` statements in production code
 - [ ] All logging uses `ILogger` with structured logging patterns
 - [ ] Appropriate log levels used
@@ -165,10 +178,12 @@ There are 15 instances of `Console.WriteLine` in production code that should be 
 - [ ] Logs are properly captured in Application Insights or other log sinks
 
 #### Files to Modify
+
 - `src/amlink-submissions-mcp-server/Program.cs` (DisplayStartupInfo method)
 - `src/amlink-submissions-mcp-client/Program.cs` (startup messages)
 
 #### Dependencies
+
 - None
 
 ---
@@ -182,6 +197,7 @@ There are 15 instances of `Console.WriteLine` in production code that should be 
 **Labels:** `enhancement`, `security`, `medium-priority`
 
 #### Description
+
 The current `TokenHasRequiredScope()` method uses manual base64 string parsing, which is error-prone and doesn't validate signatures or claims properly. This should be replaced with the standard JWT library.
 
 #### Implementation Guidelines
@@ -190,6 +206,7 @@ The current `TokenHasRequiredScope()` method uses manual base64 string parsing, 
    - `System.IdentityModel.Tokens.Jwt`
 
 2. **Rewrite `TokenHasRequiredScope()` method:**
+
    ```csharp
    private bool TokenHasRequiredScope(string token, string requiredScope)
    {
@@ -235,6 +252,7 @@ The current `TokenHasRequiredScope()` method uses manual base64 string parsing, 
    - Implement proper token refresh logic
 
 #### Acceptance Criteria
+
 - [ ] JWT parsing uses `System.IdentityModel.Tokens.Jwt` library
 - [ ] Token expiration is checked
 - [ ] Scope claims are properly validated
@@ -242,11 +260,13 @@ The current `TokenHasRequiredScope()` method uses manual base64 string parsing, 
 - [ ] Unit tests for token validation scenarios
 
 #### Files to Modify
+
 - `src/amlink-submissions-mcp-server/Tools/SubmissionApiTools.cs` (lines 204-236)
 - `src/amlink-submissions-mcp-server/amlink-submissions-mcp-server.csproj` (add package reference)
 - `src/amlink-submissions-mcp.Tests/Tools/SubmissionApiToolsTests.cs` (add JWT validation tests)
 
 #### Dependencies
+
 - Task 3 (logging) should be completed first for proper error logging
 
 ---
@@ -258,6 +278,7 @@ The current `TokenHasRequiredScope()` method uses manual base64 string parsing, 
 **Labels:** `enhancement`, `reliability`, `medium-priority`
 
 #### Description
+
 External API calls have no retry logic, circuit breaker pattern, or timeout configuration. This can lead to cascading failures and poor user experience during transient network issues.
 
 #### Implementation Guidelines
@@ -266,6 +287,7 @@ External API calls have no retry logic, circuit breaker pattern, or timeout conf
    - `Microsoft.Extensions.Http.Resilience`
 
 2. **Configure resilient HTTP client** in Program.cs:
+
    ```csharp
    builder.Services.AddHttpClient("SubmissionApi", client =>
    {
@@ -295,6 +317,7 @@ External API calls have no retry logic, circuit breaker pattern, or timeout conf
 3. **Update SubmissionApiTools** to use IHttpClientFactory
 
 #### Acceptance Criteria
+
 - [ ] HTTP clients configured with retry policy
 - [ ] Circuit breaker implemented
 - [ ] Timeouts properly configured
@@ -302,11 +325,13 @@ External API calls have no retry logic, circuit breaker pattern, or timeout conf
 - [ ] Integration tests for resilience scenarios
 
 #### Files to Modify
+
 - `src/amlink-submissions-mcp-server/Program.cs` (add HTTP client configuration)
 - `src/amlink-submissions-mcp-server/Tools/SubmissionApiTools.cs` (use IHttpClientFactory)
 - `src/amlink-submissions-mcp-server/amlink-submissions-mcp-server.csproj` (add package reference)
 
 #### Dependencies
+
 - None
 
 ---
@@ -318,11 +343,13 @@ External API calls have no retry logic, circuit breaker pattern, or timeout conf
 **Labels:** `enhancement`, `observability`, `medium-priority`
 
 #### Description
+
 Currently, there are no correlation IDs for tracing requests across services, making it difficult to debug production issues. Error messages are also generic and lack context.
 
 #### Implementation Guidelines
 
 1. **Create Correlation ID Middleware:**
+
    ```csharp
    // Create Middleware/CorrelationIdMiddleware.cs
    public class CorrelationIdMiddleware
@@ -360,6 +387,7 @@ Currently, there are no correlation IDs for tracing requests across services, ma
    - Include correlation ID in error responses
 
 #### Acceptance Criteria
+
 - [ ] Correlation ID middleware implemented
 - [ ] All logs include correlation IDs
 - [ ] Error messages include relevant context
@@ -367,12 +395,14 @@ Currently, there are no correlation IDs for tracing requests across services, ma
 - [ ] Documentation updated with correlation ID usage
 
 #### Files to Create/Modify
+
 - `src/amlink-submissions-mcp-server/Middleware/CorrelationIdMiddleware.cs` (new)
 - `src/amlink-submissions-mcp-server/Program.cs` (add middleware)
 - `src/amlink-submissions-mcp-server/Tools/SubmissionApiTools.cs` (improve error messages)
 - `src/amlink-submissions-mcp-client/Services/IMcpService.cs` (add correlation ID support)
 
 #### Dependencies
+
 - Task 3 (logging) should be completed first
 
 ---
@@ -384,6 +414,7 @@ Currently, there are no correlation IDs for tracing requests across services, ma
 **Labels:** `enhancement`, `observability`, `medium-priority`
 
 #### Description
+
 The README mentions health checks at `/health` endpoint, but no implementation exists. Health checks are essential for load balancers, monitoring, and zero-downtime deployments.
 
 #### Implementation Guidelines
@@ -392,6 +423,7 @@ The README mentions health checks at `/health` endpoint, but no implementation e
    - `Microsoft.Extensions.Diagnostics.HealthChecks`
 
 2. **Configure health checks** in Program.cs:
+
    ```csharp
    builder.Services.AddHealthChecks()
        .AddCheck("self", () => HealthCheckResult.Healthy())
@@ -411,6 +443,7 @@ The README mentions health checks at `/health` endpoint, but no implementation e
    - `/health/live` - Liveness probe for K8s
 
 #### Acceptance Criteria
+
 - [ ] Health check endpoints implemented
 - [ ] Dependencies checked (Identity Server, Submission API)
 - [ ] JSON response with detailed status
@@ -419,12 +452,14 @@ The README mentions health checks at `/health` endpoint, but no implementation e
 - [ ] Health checks documented
 
 #### Files to Modify
+
 - `src/amlink-submissions-mcp-server/Program.cs` (add health checks)
 - `src/amlink-submissions-mcp-server/amlink-submissions-mcp-server.csproj` (add package reference)
 - `docker-compose.yml` (add health check configuration)
 - `README.md` (update health check documentation)
 
 #### Dependencies
+
 - None
 
 ---
@@ -438,11 +473,13 @@ The README mentions health checks at `/health` endpoint, but no implementation e
 **Labels:** `enhancement`, `code-quality`, `low-priority`
 
 #### Description
+
 There's no `.editorconfig` file or Roslyn analyzers configured, which can lead to inconsistent code formatting and style issues.
 
 #### Implementation Guidelines
 
 1. **Create `.editorconfig`** at repository root:
+
    ```ini
    # EditorConfig is awesome: https://EditorConfig.org
    
@@ -470,6 +507,7 @@ There's no `.editorconfig` file or Roslyn analyzers configured, which can lead t
    ```
 
 2. **Add Roslyn analyzers** to `.csproj` files:
+
    ```xml
    <PropertyGroup>
      <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -487,6 +525,7 @@ There's no `.editorconfig` file or Roslyn analyzers configured, which can lead t
    ```
 
 #### Acceptance Criteria
+
 - [ ] `.editorconfig` file created with C# style rules
 - [ ] Roslyn analyzers added to all projects
 - [ ] Code style enforced in build
@@ -494,6 +533,7 @@ There's no `.editorconfig` file or Roslyn analyzers configured, which can lead t
 - [ ] Existing code follows the style rules
 
 #### Files to Create/Modify
+
 - `.editorconfig` (new)
 - `src/amlink-submissions-mcp-server/amlink-submissions-mcp-server.csproj`
 - `src/amlink-submissions-mcp-client/amlink-submissions-mcp-client.csproj`
@@ -501,6 +541,7 @@ There's no `.editorconfig` file or Roslyn analyzers configured, which can lead t
 - `.github/workflows/ci-cd.yml` (add style validation)
 
 #### Dependencies
+
 - None
 
 ---
@@ -512,11 +553,13 @@ There's no `.editorconfig` file or Roslyn analyzers configured, which can lead t
 **Labels:** `enhancement`, `configuration`, `low-priority`
 
 #### Description
+
 Configuration validation exists but is basic. Enhanced validation with schema checking and early failure would improve debugging and prevent runtime errors.
 
 #### Implementation Guidelines
 
 1. **Create comprehensive configuration validator:**
+
    ```csharp
    // Create Configuration/ConfigurationValidator.cs
    public static class ConfigurationValidator
@@ -552,6 +595,7 @@ Configuration validation exists but is basic. Enhanced validation with schema ch
    - Include validation in health checks
 
 #### Acceptance Criteria
+
 - [ ] Comprehensive configuration validation implemented
 - [ ] Validation runs at application startup
 - [ ] Clear error messages for invalid configuration
@@ -561,6 +605,7 @@ Configuration validation exists but is basic. Enhanced validation with schema ch
 - [ ] Unit tests for validation logic
 
 #### Files to Create/Modify
+
 - `src/amlink-submissions-mcp-server/Configuration/ConfigurationValidator.cs` (new)
 - `src/amlink-submissions-mcp-server/Program.cs` (call validator)
 - `src/amlink-submissions-mcp-client/Configuration/ConfigurationValidator.cs` (new)
@@ -568,6 +613,7 @@ Configuration validation exists but is basic. Enhanced validation with schema ch
 - `src/amlink-submissions-mcp.Tests/Configuration/ConfigurationValidatorTests.cs` (new)
 
 #### Dependencies
+
 - None
 
 ---
@@ -579,6 +625,7 @@ Configuration validation exists but is basic. Enhanced validation with schema ch
 **Labels:** `enhancement`, `api`, `documentation`, `low-priority`
 
 #### Description
+
 Currently, there's no versioning strategy for MCP tools, which could break clients when changes are made. A clear versioning strategy is needed for API evolution.
 
 #### Implementation Guidelines
@@ -599,6 +646,7 @@ Currently, there's no versioning strategy for MCP tools, which could break clien
    - Deprecation timeline
 
 #### Acceptance Criteria
+
 - [ ] Versioning strategy documented
 - [ ] Version included in tool definitions
 - [ ] Backward compatibility plan defined
@@ -607,11 +655,13 @@ Currently, there's no versioning strategy for MCP tools, which could break clien
 - [ ] Client SDKs updated to handle versions
 
 #### Files to Create/Modify
+
 - `docs/API-VERSIONING.md` (new)
 - `src/amlink-submissions-mcp-server/Tools/SubmissionApiTools.cs` (add versioning)
 - `README.md` (add versioning section)
 
 #### Dependencies
+
 - None
 
 ---
@@ -654,6 +704,7 @@ Recommended implementation order for optimal workflow:
 | 10. API Versioning | Low | 🔴 Not Started | - | - |
 
 **Status Key:**
+
 - 🔴 Not Started
 - 🟡 In Progress
 - 🟢 Completed

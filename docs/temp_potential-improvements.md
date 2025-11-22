@@ -5,6 +5,7 @@ This document outlines potential issues and improvement opportunities identified
 ## 🎯 Executive Summary
 
 The repository is well-structured with strong CI/CD foundations and clean architecture. However, there are opportunities to improve:
+
 - **Test Coverage**: Currently ~7% (1 test file with 4 tests for 15 production files)
 - **Code Quality**: Missing input validation, inconsistent logging, basic error handling
 - **Security**: JWT parsing could be more robust
@@ -17,6 +18,7 @@ The repository is well-structured with strong CI/CD foundations and clean archit
 ### 1. Insufficient Test Coverage
 
 **Current State:**
+
 - Only 1 test file: `BasicTests.cs` with 4 placeholder tests
 - No unit tests for:
   - `SubmissionApiTools` (4 MCP tool methods)
@@ -26,14 +28,17 @@ The repository is well-structured with strong CI/CD foundations and clean archit
 - No integration tests
 - No container/Docker tests
 
-**Impact:** 
+**Impact:**
+
 - High risk of bugs in production
 - Difficult to refactor confidently
 - No regression protection
 - Tracked in Issue #2
 
 **Recommended Actions:**
+
 1. **Unit Tests** (Priority 1):
+
    ```
    - SubmissionApiTools.GetSubmission()
    - SubmissionApiTools.CreateSubmission()
@@ -44,6 +49,7 @@ The repository is well-structured with strong CI/CD foundations and clean archit
    ```
 
 2. **Integration Tests** (Priority 2):
+
    ```
    - End-to-end MCP tool invocation
    - OAuth flow with mock Identity Server
@@ -51,6 +57,7 @@ The repository is well-structured with strong CI/CD foundations and clean archit
    ```
 
 3. **Test Infrastructure**:
+
    ```
    - Add test coverage reporting (coverlet)
    - Set up test data builders
@@ -59,6 +66,7 @@ The repository is well-structured with strong CI/CD foundations and clean archit
    ```
 
 **Example Test Structure:**
+
 ```csharp
 public class SubmissionApiToolsTests
 {
@@ -80,6 +88,7 @@ public class SubmissionApiToolsTests
 ### 2. Missing Input Validation
 
 **Current State:**
+
 - `SubmissionApiTools.cs` methods accept parameters without validation
 - No null checks on:
   - `submissionId` in `GetSubmission()`
@@ -88,6 +97,7 @@ public class SubmissionApiToolsTests
 - Invalid inputs could cause NullReferenceException or API errors
 
 **Affected Code:**
+
 ```csharp
 // File: src/amlink-submissions-mcp-server/Tools/SubmissionApiTools.cs
 public async Task<string> GetSubmission(string submissionId)
@@ -106,12 +116,14 @@ public async Task<string> CreateSubmission(int accountId, string submissionData)
 ```
 
 **Impact:**
+
 - Runtime exceptions with unclear error messages
 - API calls with invalid data
 - Poor developer experience
 - Security risk (potential injection attacks)
 
 **Recommended Solution:**
+
 ```csharp
 public async Task<string> GetSubmission(
     [Description("The ID of the submission to retrieve")] string submissionId)
@@ -153,6 +165,7 @@ public async Task<string> CreateSubmission(
 ```
 
 **Files to Update:**
+
 - `src/amlink-submissions-mcp-server/Tools/SubmissionApiTools.cs` (4 methods)
 - Consider creating a validation helper class for reusable validation logic
 
@@ -161,12 +174,14 @@ public async Task<string> CreateSubmission(
 ### 3. Console.WriteLine Instead of Structured Logging
 
 **Current State:**
+
 - 15 instances of `Console.WriteLine` used in production code
 - Found in:
   - `src/amlink-submissions-mcp-server/Program.cs` (DisplayStartupInfo method)
   - `src/amlink-submissions-mcp-client/Program.cs` (startup messages)
 
 **Example:**
+
 ```csharp
 // File: src/amlink-submissions-mcp-server/Program.cs:256
 Console.WriteLine($"Starting MCP server with Identity Server 4 authorization at {serverConfig.Url}");
@@ -175,12 +190,14 @@ Console.WriteLine($"Client ID: {idsConfig.ClientId}");
 ```
 
 **Impact:**
+
 - Lost logging context (timestamps, log levels, correlation IDs)
 - Cannot be captured by logging infrastructure
 - Difficult to filter or search in production
 - No integration with Application Insights, Serilog, etc.
 
 **Recommended Solution:**
+
 ```csharp
 static void DisplayStartupInfo(
     ServerConfiguration serverConfig, 
@@ -206,6 +223,7 @@ DisplayStartupInfo(serverConfig!, idsConfig!, externalApisConfig!, logger);
 ```
 
 **Benefits:**
+
 - Structured logging with semantic properties
 - Proper log levels
 - Integration with logging infrastructure
@@ -218,11 +236,13 @@ DisplayStartupInfo(serverConfig!, idsConfig!, externalApisConfig!, logger);
 ### 4. Basic JWT Token Parsing
 
 **Current State:**
+
 - `SubmissionApiTools.TokenHasRequiredScope()` uses manual base64 string parsing
 - Error-prone and difficult to maintain
 - Doesn't validate signature or claims properly
 
 **Affected Code:**
+
 ```csharp
 // File: src/amlink-submissions-mcp-server/Tools/SubmissionApiTools.cs:204-236
 private static bool TokenHasRequiredScope(string token, string requiredScope)
@@ -250,12 +270,14 @@ private static bool TokenHasRequiredScope(string token, string requiredScope)
 ```
 
 **Impact:**
+
 - Security risk (no signature validation)
 - Swallows all exceptions
 - Difficult to debug
 - Not following JWT best practices
 
 **Recommended Solution:**
+
 ```csharp
 // Add NuGet package: System.IdentityModel.Tokens.Jwt
 
@@ -301,6 +323,7 @@ private bool TokenHasRequiredScope(string token, string requiredScope)
 ```
 
 **Additional Improvements:**
+
 - Consider caching validated tokens
 - Add token signature validation in production
 - Implement proper token refresh logic
@@ -310,12 +333,14 @@ private bool TokenHasRequiredScope(string token, string requiredScope)
 ### 5. Missing HTTP Client Resilience
 
 **Current State:**
+
 - No retry logic for external API calls
 - No circuit breaker pattern
 - No timeout configuration beyond HttpClient default
 - Single point of failure for downstream services
 
 **Affected Code:**
+
 ```csharp
 // File: src/amlink-submissions-mcp-server/Tools/SubmissionApiTools.cs
 var response = await client.GetAsync($"submissions/{submissionId}");
@@ -327,12 +352,14 @@ if (!response.IsSuccessStatusCode)
 ```
 
 **Impact:**
+
 - Transient failures cause immediate errors
 - No graceful degradation
 - Poor user experience during network issues
 - Cascading failures possible
 
 **Recommended Solution:**
+
 ```csharp
 // Add NuGet package: Polly or Microsoft.Extensions.Http.Resilience
 
@@ -363,6 +390,7 @@ builder.Services.AddHttpClient("SubmissionApi", client =>
 ```
 
 **Benefits:**
+
 - Automatic retry on transient failures
 - Circuit breaker prevents cascading failures
 - Better overall reliability
@@ -373,18 +401,22 @@ builder.Services.AddHttpClient("SubmissionApi", client =>
 ### 6. Limited Error Context and Correlation
 
 **Current State:**
+
 - Generic error messages
 - No correlation IDs for tracing requests
 - Difficult to debug production issues
 - No structured error responses
 
 **Impact:**
+
 - Hard to trace issues across services
 - Poor debugging experience
 - Cannot correlate client and server logs
 
 **Recommended Solution:**
+
 1. **Add Correlation ID Middleware:**
+
 ```csharp
 // Create Middleware/CorrelationIdMiddleware.cs
 public class CorrelationIdMiddleware
@@ -416,6 +448,7 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 ```
 
 2. **Improve Error Messages:**
+
 ```csharp
 public async Task<string> GetSubmission(string submissionId)
 {
@@ -458,16 +491,19 @@ public async Task<string> GetSubmission(string submissionId)
 ### 7. Missing Health Checks
 
 **Current State:**
+
 - README mentions health checks at `/health` endpoint
 - No health check implementation found in code
 - Cannot verify service readiness in production
 
 **Impact:**
+
 - Load balancers cannot determine if service is healthy
 - No automated health monitoring
 - Difficult to implement zero-downtime deployments
 
 **Recommended Solution:**
+
 ```csharp
 // Add NuGet package: Microsoft.Extensions.Diagnostics.HealthChecks
 
@@ -522,12 +558,14 @@ app.MapHealthChecks("/health/live", new HealthCheckOptions
 ### 8. Missing EditorConfig and Code Style Enforcement
 
 **Current State:**
+
 - No `.editorconfig` file at repository root
 - Inconsistent code formatting possible
 - No Roslyn analyzers configured
 
 **Recommended Action:**
 Create `.editorconfig`:
+
 ```ini
 # EditorConfig is awesome: https://EditorConfig.org
 
@@ -555,6 +593,7 @@ indent_size = 2
 ```
 
 Add to `.csproj` files:
+
 ```xml
 <PropertyGroup>
   <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -576,11 +615,13 @@ Add to `.csproj` files:
 ### 9. Configuration Validation at Startup
 
 **Current State:**
+
 - Configuration validation exists but is basic
 - No schema validation
 - Could fail late in execution
 
 **Recommended Enhancement:**
+
 ```csharp
 // Create Configuration/ConfigurationValidator.cs
 public static class ConfigurationValidator
@@ -647,10 +688,12 @@ public static class ConfigurationValidator
 ### 10. API Versioning Strategy
 
 **Current State:**
+
 - No versioning in MCP tool definitions
 - Could break clients on changes
 
 **Recommended Approach:**
+
 1. Add version to tool names: `v1_GetSubmission`
 2. Use semantic versioning for MCP server
 3. Support multiple versions simultaneously
@@ -660,7 +703,8 @@ public static class ConfigurationValidator
 
 ## 🔍 Additional Observations
 
-### Positive Aspects:
+### Positive Aspects
+
 - ✅ Clean separation of concerns (client/server/tests)
 - ✅ Strong CI/CD pipeline with multiple workflows
 - ✅ Good use of dependency injection
@@ -669,13 +713,15 @@ public static class ConfigurationValidator
 - ✅ Comprehensive README documentation
 - ✅ Security-first approach (Identity Server 4, OAuth 2.0)
 
-### Documentation Gaps:
+### Documentation Gaps
+
 - Architecture diagrams missing
 - No API documentation (Swagger/OpenAPI)
 - No troubleshooting guide
 - Limited inline code comments
 
-### Performance Considerations:
+### Performance Considerations
+
 - No caching strategy documented
 - Token validation happens on every request
 - Could benefit from distributed caching (Redis)
@@ -685,6 +731,7 @@ public static class ConfigurationValidator
 ## 📋 Prioritized Action Plan
 
 ### Phase 1: Foundation (High Priority)
+
 1. ✅ Add comprehensive test suite (Issue #2)
    - Unit tests for all tools and services
    - Integration tests
@@ -695,6 +742,7 @@ public static class ConfigurationValidator
 **Estimated Effort:** 3-5 days
 
 ### Phase 2: Reliability (Medium Priority)
+
 4. ✅ Implement proper JWT token handling
 5. ✅ Add HTTP client resilience (Polly)
 6. ✅ Add correlation IDs and improved error handling
@@ -703,6 +751,7 @@ public static class ConfigurationValidator
 **Estimated Effort:** 2-3 days
 
 ### Phase 3: Quality (Low Priority)
+
 8. ✅ Add EditorConfig and Roslyn analyzers
 9. ✅ Enhance configuration validation
 10. ✅ Define API versioning strategy
@@ -723,6 +772,7 @@ To implement these improvements:
 5. Submit PRs referencing this document
 
 For questions or discussions about these recommendations, please:
+
 - Open a GitHub Discussion
 - Comment on related issues (#1, #2, #4)
 - Reach out to the maintainers

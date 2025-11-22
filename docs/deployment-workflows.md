@@ -53,10 +53,12 @@ graph TD
 ### Deploying to Existing Environment
 
 **Automatic (Recommended):**
+
 1. Create a new tag: `git tag v1.0.0 && git push origin v1.0.0`
 2. Workflows automatically: Build → Release → Deploy to staging
 
 **Manual:**
+
 1. Go to Actions → "Deploy to Web Apps for Containers"
 2. Click "Run workflow"
 3. Select environment and image tag
@@ -73,8 +75,8 @@ graph TD
 ### Current Environments
 
 - **Staging**: `rg-amlink-submissions-mcp-staging`
-  - Client: https://app-amlink-submissions-mcp-staging-client.azurewebsites.net
-  - Server: https://app-amlink-submissions-mcp-staging-server.azurewebsites.net
+  - Client: <https://app-amlink-submissions-mcp-staging-client.azurewebsites.net>
+  - Server: <https://app-amlink-submissions-mcp-staging-server.azurewebsites.net>
 
 - **Production**: Not yet provisioned
   - Use "Provision Infrastructure" workflow to create
@@ -94,6 +96,7 @@ The following secrets must be configured in the repository:
 ### Azure Service Principal Permissions
 
 The service principal needs the following permissions:
+
 - **Contributor** role on the subscription or resource group
 - **Access to GitHub Container Registry** for pulling images
 
@@ -102,27 +105,32 @@ The service principal needs the following permissions:
 The deployment workflows preserve all existing application settings. For new environments, you'll need to manually configure:
 
 ### Client App Settings
+
 - `IdentityServer__*`: Identity Server configuration
 - `McpServer__*`: MCP server URLs
 - `OPENAI_API_KEY`: OpenAI API key
 
 ### Server App Settings  
+
 - `IdentityServer__*`: Identity Server configuration
 - `ExternalApis__*`: External API configurations
 
 ## Troubleshooting
 
 ### Authentication Failures
+
 - Verify service principal secrets are correct
 - Check service principal has Contributor role
 - Ensure subscription ID is correct
 
 ### Container Image Issues
+
 - Verify images exist in GitHub Container Registry
 - Check image tags match the deployment version
 - Ensure GITHUB_TOKEN has package read permissions
 
 ### Health Check Failures
+
 - Applications may take 1-2 minutes to fully start
 - Check application logs in Azure portal
 - Verify environment variables are correctly set
@@ -130,12 +138,14 @@ The deployment workflows preserve all existing application settings. For new env
 ## Migration Notes
 
 ### From Previous Workflows
+
 - `azure-deploy.yml` (Container Apps) → Removed
 - `webapp-update.yml` (Broken auth) → Replaced with `deploy-webapps.yml`
 - `release.yml` (Complex) → Simplified to `auto-release.yml`
 - `deployment-validation.yml` → Integrated into `deploy-webapps.yml`
 
 ### Key Improvements
+
 - ✅ Reliable Azure authentication
 - ✅ Environment variable preservation  
 - ✅ Health checks and verification

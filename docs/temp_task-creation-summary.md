@@ -14,6 +14,7 @@ Based on the comprehensive analysis in [temp_potential-improvements.md](temp_pot
 **Purpose:** Complete technical specifications for all 10 improvement tasks
 
 **Contents:**
+
 - Detailed description for each task
 - Implementation guidelines with code examples
 - Acceptance criteria (checklists)
@@ -24,6 +25,7 @@ Based on the comprehensive analysis in [temp_potential-improvements.md](temp_pot
 - Progress tracking table
 
 **Organization:** Tasks are organized into 3 phases:
+
 - **Phase 1 (High Priority):** Testing, validation, logging (3 tasks)
 - **Phase 2 (Medium Priority):** Security, resilience, observability (4 tasks)
 - **Phase 3 (Low Priority):** Code quality, configuration, versioning (3 tasks)
@@ -36,6 +38,7 @@ Based on the comprehensive analysis in [temp_potential-improvements.md](temp_pot
 **Purpose:** Standardized templates for creating GitHub issues
 
 **Templates Created:**
+
 1. **01-testing-task.yml** - For testing-related tasks
 2. **02-code-quality-task.yml** - For code quality improvements
 3. **03-reliability-task.yml** - For reliability and resilience
@@ -44,6 +47,7 @@ Based on the comprehensive analysis in [temp_potential-improvements.md](temp_pot
 6. **config.yml** - Issue template configuration
 
 **Features:**
+
 - Dropdown menus for priority and task type
 - Pre-filled fields for consistency
 - Links to related documentation
@@ -58,6 +62,7 @@ Based on the comprehensive analysis in [temp_potential-improvements.md](temp_pot
 **Purpose:** Ready-to-use content for creating GitHub issues
 
 **Contents:**
+
 - Complete issue text for all 10 tasks
 - Formatted for copy-paste into GitHub
 - Includes labels, milestones, and metadata
@@ -65,6 +70,7 @@ Based on the comprehensive analysis in [temp_potential-improvements.md](temp_pot
 - Code examples and implementation hints
 
 **How to Use:**
+
 1. Go to GitHub Issues → New Issue
 2. Copy the issue content from this document
 3. Paste into the issue description
@@ -80,6 +86,7 @@ Based on the comprehensive analysis in [temp_potential-improvements.md](temp_pot
 **Purpose:** Step-by-step guide for contributors implementing tasks
 
 **Contents:**
+
 - Implementation workflow (pre-implementation → development → testing → submission)
 - Task-specific guidelines for each phase
 - Code examples and patterns
@@ -96,6 +103,7 @@ Based on the comprehensive analysis in [temp_potential-improvements.md](temp_pot
 ## Task Breakdown by Phase
 
 ### Phase 1: Foundation (High Priority)
+
 **Total Effort:** 5-8 days
 
 | Task # | Name | Effort | Priority |
@@ -109,6 +117,7 @@ Based on the comprehensive analysis in [temp_potential-improvements.md](temp_pot
 ---
 
 ### Phase 2: Reliability (Medium Priority)
+
 **Total Effort:** 6-8 days
 
 | Task # | Name | Effort | Priority |
@@ -123,6 +132,7 @@ Based on the comprehensive analysis in [temp_potential-improvements.md](temp_pot
 ---
 
 ### Phase 3: Quality (Low Priority)
+
 **Total Effort:** 2.5-4 days
 
 | Task # | Name | Effort | Priority |
@@ -140,11 +150,13 @@ Based on the comprehensive analysis in [temp_potential-improvements.md](temp_pot
 ### Parallel vs Sequential Implementation
 
 **Can be done in parallel:**
+
 - Task 3 (Logging) with Task 2 (Validation)
 - Task 5 (Resilience) with Task 6 (Correlation)
 - All Phase 3 tasks can be done independently
 
 **Must be done sequentially:**
+
 - Task 1 (Testing) should be done alongside or after Task 2 (Validation)
 - Task 4 (JWT) should be done after Task 3 (Logging) for proper error logging
 - Task 6 (Correlation) should be done after Task 3 (Logging)
@@ -152,15 +164,18 @@ Based on the comprehensive analysis in [temp_potential-improvements.md](temp_pot
 ### Resource Allocation
 
 **If you have 1 developer:**
+
 - Follow the phase order: Phase 1 → Phase 2 → Phase 3
 - Estimated timeline: 13-20 days
 
 **If you have 2 developers:**
+
 - Developer 1: Task 3 → Task 4 → Task 6 → Task 7
 - Developer 2: Task 2 → Task 1 → Task 5 → Task 8,9,10
 - Estimated timeline: 8-12 days
 
 **If you have 3+ developers:**
+
 - Team 1: Phase 1 (Testing infrastructure)
 - Team 2: Phase 2 (Reliability)
 - Team 3: Phase 3 (Quality)
@@ -193,11 +208,13 @@ Based on the comprehensive analysis in [temp_potential-improvements.md](temp_pot
 ## Metrics and Goals
 
 ### Current State
+
 - **Test Coverage:** ~7% (4 tests for 15+ production files)
 - **Code Quality Issues:** 10 identified improvement areas
 - **Priority:** 3 High, 4 Medium, 3 Low priority tasks
 
 ### Target State (After All Tasks Complete)
+
 - **Test Coverage:** ≥80% overall, ≥90% for critical paths
 - **Code Quality:** All validation, logging, and security improvements implemented
 - **Reliability:** Resilient HTTP clients, health checks, correlation tracking
