@@ -194,6 +194,40 @@ The deployment pipeline automatically configures:
 - **Secret Management**: Environment variable-based configuration
 - **Automatic Configuration**: Sensitive settings configured via deployment pipeline
 
+## 📊 Observability & Monitoring
+
+### Application Insights Integration
+
+The project includes comprehensive Application Insights integration for distributed tracing and observability:
+
+- **Automatic Correlation IDs**: Track requests across service boundaries
+- **Distributed Tracing**: Visualize request flows through the system
+- **Dependency Tracking**: Monitor external API calls (AmLink APIs, Identity Server)
+- **Performance Metrics**: Track request duration, throughput, and response times
+- **Exception Tracking**: Capture errors with full context and stack traces
+- **Custom Telemetry**: Enhanced properties for filtering and analysis
+
+**Key Features:**
+- 90-day data retention in Application Insights
+- Integration with Log Analytics workspace
+- Custom telemetry processor for AmLink API tagging
+- Live metrics stream for real-time monitoring
+- Adaptive sampling for cost optimization
+
+**Documentation:**
+- [Application Insights Guide](./docs/APPLICATION-INSIGHTS.md) - Complete integration guide
+- Configuration in `appsettings.json`
+- Infrastructure provisioned in `infrastructure/main.bicep`
+
+**Quick Start:**
+```bash
+# Connection string set automatically in Azure deployments
+ConnectionStrings__ApplicationInsights="InstrumentationKey=...;IngestionEndpoint=..."
+
+# Local development (telemetry disabled if not configured)
+# Leave connection string empty in appsettings.json
+```
+
 ## 🛠️ Development
 
 ### Code Formatting (REQUIRED)

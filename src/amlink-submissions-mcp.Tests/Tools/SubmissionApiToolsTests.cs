@@ -3,6 +3,8 @@ using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using AmLink.Submission.Mcp.Server.Configuration;
+using IDSProtectedMcpServer.Tools;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -13,8 +15,6 @@ using ModelContextProtocol;
 using Moq;
 using Moq.Protected;
 using Xunit;
-using IDSProtectedMcpServer.Tools;
-using AmLink.Submission.Mcp.Server.Configuration;
 
 namespace amlink_submissions_mcp.Tests.Tools;
 

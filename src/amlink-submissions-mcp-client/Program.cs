@@ -1,12 +1,14 @@
+using System.Collections.Concurrent;
+using System.Text.Json;
 using AmLink.Submissions.Mcp.Client.Configuration;
 using AmLink.Submissions.Mcp.Client.Services;
-using System.Collections.Concurrent;
-using Microsoft.Extensions.AI;
-using OpenAI;
+using Microsoft.ApplicationInsights.DependencyCollector;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using System.Text.Json;
+using OpenAI;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +18,24 @@ var idsConfig = builder.Configuration.GetSection(IdentityServerConfiguration.Sec
 
 // Validate configuration before proceeding
 ConfigurationValidator.ValidateAll(mcpConfig, idsConfig);
+
+// Configure Application Insights
+var aiConnectionString = builder.Configuration.GetConnectionString("ApplicationInsights");
+if (!string.IsNullOrEmpty(aiConnectionString))
+{
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ConnectionString = aiConnectionString;
+        options.EnableAdaptiveSampling = builder.Configuration.GetValue<bool>("ApplicationInsights:EnableAdaptiveSampling", true);
+        options.EnableQuickPulseMetricStream = builder.Configuration.GetValue<bool>("ApplicationInsights:EnableQuickPulseMetricStream", true);
+    });
+
+    // Enable SQL command text instrumentation for dependency tracking
+    builder.Services.ConfigureTelemetryModule<DependencyTrackingTelemetryModule>((module, o) =>
+    {
+        module.EnableSqlCommandTextInstrumentation = true;
+    });
+}
 
 var openAiKey = builder.Configuration.GetValue<string>("OPENAI_API_KEY");
 var openAIClient = new OpenAIClient(openAiKey).GetChatClient("gpt-4o-mini");
