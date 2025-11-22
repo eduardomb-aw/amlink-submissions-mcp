@@ -133,6 +133,9 @@ public async Task GetSubmission_WithNullSubmissionId_ShouldThrowArgumentNullExce
 - Verify proper authorization header handling
 - Test token validation and scope requirements
 - Test unauthorized access scenarios
+- **Critical**: Mock authorization headers with both dictionary access (`h["Authorization"]`) and `TryGetValue()` method
+- Test HttpContext availability and proper error handling when context is missing
+- Validate that authentication errors throw `McpException` before any HTTP calls are made
 
 ### Test Structure Standards
 
@@ -186,8 +189,9 @@ public async Task MethodName_Scenario_ExpectedBehavior()
 4. **Commit Failing Tests**: Push to feature branch - PR validation will fail (expected)
 5. **Implement Code**: Write minimal code to make tests pass
 6. **Refactor**: Improve code quality while keeping tests green
-7. **Validate**: Ensure all tests pass and PR validation succeeds
-8. **Merge**: Only merge when all tests pass - main branch stays clean
+7. **Pre-Push Validation**: **MANDATORY** - Run `.\scripts\pre-push-validation.ps1` before pushing
+8. **Validate**: Ensure all tests pass and PR validation succeeds
+9. **Merge**: Only merge when all tests pass - main branch stays clean
 
 ### Branch Protection Strategy
 - **Main Branch**: Always has passing tests - never merge failing tests
@@ -195,12 +199,73 @@ public async Task MethodName_Scenario_ExpectedBehavior()
 - **PR Validation**: Failing tests block merge until implementation is complete
 - **Forcing Function**: Failing tests in PR ensure complete implementation before merge
 
+### Unit Test Consistency Guidelines
+
+#### Test Organization and Structure
+- **Use Test Constants**: Define common test values as constants at the top of test classes
+  ```csharp
+  private const long ValidSubmissionId = 12345L;
+  private const string ValidJsonResponse = "{\"id\": 12345, \"status\": \"active\"}";
+  private const string TestBearerToken = "Bearer test-token";
+  ```
+- **Group Related Tests**: Use `#region` markers to organize test categories (Parameter Validation, HTTP Integration, Security, etc.)
+- **Consistent Naming**: Always follow `MethodName_Scenario_ExpectedBehavior` pattern
+
+#### Mock Setup Consistency
+- **Create Helper Methods**: Extract complex mock setup into reusable helper methods
+  ```csharp
+  private static Mock<IHttpContextAccessor> CreateMockHttpContextAccessor(string? authHeaderValue = null)
+  {
+      // Standardized mock setup logic
+  }
+  ```
+- **Centralize HttpClient Configuration**: Set up HTTP clients with proper headers in constructor
+- **Standardize Authorization**: Use consistent patterns for mocking authorization headers across all tests
+
+#### Test Data Management
+- **Avoid Magic Numbers**: Replace hardcoded values with named constants
+- **Consistent Test IDs**: Use the same test values across related tests for easier maintenance
+- **Realistic Test Data**: Use meaningful JSON responses that reflect actual API structures
+
+#### Assertion Patterns
+- **Consistent Exception Testing**: Always verify both exception type and relevant properties
+  ```csharp
+  var exception = await Assert.ThrowsAsync<ArgumentException>(() => method(parameter));
+  Assert.Equal("parameterName", exception.ParamName);
+  Assert.Contains("expected message", exception.Message);
+  ```
+- **HTTP Request Validation**: When testing HTTP calls, verify method, URL, headers, and authorization
+- **JSON Validation**: Parse and validate JSON responses rather than string comparison
+
+#### Test Categories and Coverage
+- **Parameter Validation**: Test null, empty, zero, negative, and boundary values
+- **HTTP Integration**: Test success scenarios, various error codes, timeouts, and network failures  
+- **JSON Processing**: Test valid JSON, invalid JSON, empty responses, and malformed data
+- **Security Testing**: Test missing tokens, invalid tokens, expired tokens, and insufficient scopes
+- **Edge Cases**: Test maximum values, special characters, and unusual but valid inputs
+
+#### Mock Configuration Best Practices
+- **HttpMessageHandler Mocking**: Use `Mock.Protected()` for HTTP request interception
+- **Request Capture**: Use callbacks to capture and verify actual HTTP requests made
+- **Response Simulation**: Create realistic HTTP responses with proper status codes and content
+- **Authorization Header Setup**: Mock both dictionary access and `TryGetValue` methods for headers
+
+#### Test Maintenance Guidelines
+- **DRY Principle**: Extract common setup logic into helper methods or base classes
+- **Readable Assertions**: Use descriptive assertion messages that explain what went wrong
+- **Test Documentation**: Add comments explaining complex test scenarios or edge cases
+- **Consistent Formatting**: Follow the same indentation and spacing patterns across all tests
+
 ### TDD Anti-Patterns to Avoid
 - ❌ Writing tests after implementation
 - ❌ Making tests pass by changing the test instead of the code
 - ❌ Writing tests that don't actually test the intended behavior
 - ❌ Skipping edge cases or error conditions
 - ❌ Writing implementation code without a failing test
+- ❌ Using magic numbers instead of named constants in tests
+- ❌ Duplicating complex mock setup across multiple test methods
+- ❌ Inconsistent naming patterns for similar test scenarios
+- ❌ Testing implementation details instead of behavior
 
 ## Coding Standards
 
@@ -346,6 +411,19 @@ Required environment variables (see `.env.example`):
 
 ## Common Tasks
 
+### Pre-Push Validation
+**Always run before pushing any changes:**
+
+```powershell
+# Run complete validation (mirrors GitHub Actions exactly)
+.\scripts\pre-push-validation.ps1
+
+# First-time setup (install required tools)
+.\scripts\setup-validation-tools.ps1
+```
+
+**Required for every commit to prevent PR validation failures.**
+
 ### Adding a New MCP Tool
 1. Create a new class in `src/amlink-submissions-mcp-server/Tools/`
 2. Implement the tool following MCP SDK patterns
@@ -388,6 +466,38 @@ Required environment variables (see `.env.example`):
 - Verify `IDENTITY_SERVER_CLIENT_SECRET` is properly configured
 - Check Identity Server 4 configuration in both client and server
 - Ensure JWT Bearer tokens are correctly validated
+
+### Unit Test Issues
+
+#### Issue: "No valid bearer token found in request" in tests
+**Root Cause**: Authorization header mock setup doesn't properly handle both dictionary access and `TryGetValue()` method calls.
+**Solution**: Mock both access patterns:
+```csharp
+var authHeaderValue = new Microsoft.Extensions.Primitives.StringValues("Bearer test-token");
+mockHeaders.Setup(h => h["Authorization"]).Returns(authHeaderValue);
+mockHeaders.Setup(h => h.TryGetValue("Authorization", out It.Ref<Microsoft.Extensions.Primitives.StringValues>.IsAny))
+    .Returns((string key, out Microsoft.Extensions.Primitives.StringValues values) =>
+    {
+        values = authHeaderValue;
+        return true;
+    });
+```
+**Best Practice**: Always use `TryGetValue()` method in production code instead of direct dictionary access to avoid KeyNotFoundException. This pattern is more robust and testable.
+
+#### Issue: "Sequence contains no elements" in HTTP request validation tests
+**Root Cause**: User Agent header not configured in test HttpClient setup.
+**Solution**: Configure User Agent in test client setup:
+```csharp
+_httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("test-client/1.0");
+```
+
+#### Issue: Inconsistent test data across test methods
+**Root Cause**: Magic numbers and hardcoded values scattered throughout tests.
+**Solution**: Define constants at class level and reuse:
+```csharp
+private const long ValidSubmissionId = 12345L;
+private const string ValidJsonResponse = "{\"id\": 12345, \"status\": \"active\"}";
+```
 
 ### GitHub Actions Workflow Issues
 
@@ -561,6 +671,51 @@ docker-compose down && docker-compose up -d
 - [ ] Port mappings don't conflict with host services
 - [ ] OAuth redirect URIs match Identity Server configuration exactly
 
+## Pre-Push Validation
+
+### Local Validation Requirements
+To prevent PR validation failures, **ALWAYS** run pre-push validation before pushing changes:
+
+```powershell
+# One-time setup (installs required tools)
+.\scripts\setup-validation-tools.ps1
+
+# Before every push (mirrors PR validation exactly)
+.\scripts\pre-push-validation.ps1
+```
+
+### Pre-Push Validation Steps
+The pre-push validation script mirrors the GitHub Actions PR validation workflow exactly:
+
+#### .NET Validation
+- **Dependency Restore**: `dotnet restore`
+- **Code Formatting**: `dotnet format --verify-no-changes --verbosity diagnostic`
+- **Build**: `dotnet build --no-restore --configuration Release`
+- **Tests**: `dotnet test --no-build --configuration Release`
+- **Docker Builds**: Test both server and client Docker builds
+- **Docker Compose**: Validate all compose configurations
+
+#### Linting & Security
+- **Markdown**: markdownlint validation on all .md files using `.markdownlint.json` configuration
+- **Dockerfiles**: hadolint validation on all Dockerfiles (DL3008, DL4006 rules enforced)
+- **YAML/JSON**: Basic syntax validation
+- **Required Tools**: markdownlint-cli, hadolint, Docker, .NET SDK
+
+**Markdownlint Configuration Strategy**: The `.markdownlint.json` file focuses on critical structural issues while allowing flexibility on verbose formatting rules. Key disabled rules: line-length (MD013), blanks-around-headings (MD022), ordered-list-prefix (MD029) to balance validation with practicality.
+
+### Pre-Push Validation Rules
+1. **Mandatory Usage**: Never push without running `.\scripts\pre-push-validation.ps1`
+2. **Tool Installation**: Run `.\scripts\setup-validation-tools.ps1` once per environment
+3. **Zero Tolerance**: Script must pass with exit code 0 before pushing
+4. **Complete Coverage**: Script validates 100% of what GitHub Actions PR validation checks
+5. **Time Investment**: 30-60 seconds locally vs. hours of PR iteration cycles
+
+### Pre-Push Validation Benefits
+- **Immediate Feedback**: Catch issues in seconds instead of waiting for CI/CD
+- **Consistent Environment**: Matches exactly what GitHub Actions will check
+- **Faster Development**: Prevents push → fail → fix → push cycles
+- **Quality Assurance**: Ensures all code meets project standards before submission
+
 ## Pull Request Workflow Troubleshooting
 
 ### Common PR Validation Failures and Solutions
@@ -623,6 +778,30 @@ npx --yes markdownlint-cli2@latest "**/*.md" "!**/node_modules/**" "!**/bin/**" 
 # 4. Keep line lengths reasonable (preferably under 120 chars)
 ```
 **Common causes**: Missing language tags in code blocks, duplicate heading content, missing blank lines, excessive line lengths. Always check markdown files when modifying documentation.
+
+#### Issue: "Files should end with a single newline character" (MD047)
+**Root Cause**: Markdown files missing trailing newlines, commonly affects README.md files in subdirectories.
+**Solution**: Add trailing newline to affected files:
+```powershell
+# Fix specific file
+$content = Get-Content "path/to/file.md" -Raw; $content += "`n"; Set-Content "path/to/file.md" -Value $content -NoNewline
+
+# Or use markdownlint auto-fix (when available)
+markdownlint --fix "path/to/file.md"
+```
+**Prevention**: Configure editor to automatically add trailing newlines, or use our markdownlint configuration which focuses on critical structural issues.
+
+#### Issue: Pre-push validation fails on markdown but individual file checks pass
+**Root Cause**: The pre-push validation script scans recursively through all folders for markdown files, which may include files in subdirectories not covered by your current working directory test.
+**Solution**: Check all markdown files that the script validates:
+```powershell
+# See what files the script actually validates
+Get-ChildItem -Recurse -Filter "*.md" | Where-Object { $_.FullName -notlike "*node_modules*" -and $_.FullName -notlike "*bin*" -and $_.FullName -notlike "*obj*" } | Select-Object Name, FullName
+
+# Test each file individually
+markdownlint "full/path/to/each/file.md"
+```
+**Common culprits**: Files in `docker/`, `docs/`, and `.github/` subdirectories that may have different formatting issues.
 
 ### PR Merge Conflict Resolution Workflow
 1. **Switch to feature branch**: `git checkout feature-branch`

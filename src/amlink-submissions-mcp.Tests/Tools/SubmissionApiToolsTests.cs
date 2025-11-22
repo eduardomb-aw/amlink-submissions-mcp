@@ -23,6 +23,15 @@ namespace amlink_submissions_mcp.Tests.Tools;
 /// </summary>
 public class SubmissionApiToolsTests
 {
+    #region Test Constants
+
+    private const long ValidSubmissionId = 12345L;
+    private const string ValidJsonResponse = "{\"id\": 12345, \"status\": \"active\", \"submitter\": \"test@example.com\"}";
+    private const string TestBearerToken = "Bearer test-token";
+    private const string TestApiBaseUrl = "https://api.test.com/";
+    private const string TestUserAgent = "test-client/1.0";
+
+    #endregion
     #region TDD Tests for GetSubmission Method (from main branch)
 
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
@@ -45,8 +54,9 @@ public class SubmissionApiToolsTests
 
         _httpClient = new HttpClient(_mockHttpHandler.Object)
         {
-            BaseAddress = new Uri("https://api.test.com/")
+            BaseAddress = new Uri(TestApiBaseUrl)
         };
+        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(TestUserAgent);
 
         // Setup configuration mocks
         var idsConfig = new IdentityServerConfiguration
@@ -62,8 +72,8 @@ public class SubmissionApiToolsTests
         {
             SubmissionApi = new SubmissionApiConfiguration
             {
-                BaseUrl = "https://api.test.com",
-                RequiredScope = "submission-api",
+                BaseUrl = TestApiBaseUrl.TrimEnd('/'),
+                RequiredScope = TestScope,
                 UserAgent = "test-client",
                 Version = "1.0"
             }
@@ -79,7 +89,14 @@ public class SubmissionApiToolsTests
         var mockHeaders = new Mock<IHeaderDictionary>();
 
         // Mock the Authorization header properly for ASP.NET Core
-        mockHeaders.Setup(h => h.Authorization).Returns(new Microsoft.Extensions.Primitives.StringValues("Bearer test-token"));
+        var authHeaderValue = new Microsoft.Extensions.Primitives.StringValues(TestBearerToken);
+        mockHeaders.Setup(h => h["Authorization"]).Returns(authHeaderValue);
+        mockHeaders.Setup(h => h.TryGetValue("Authorization", out It.Ref<Microsoft.Extensions.Primitives.StringValues>.IsAny))
+            .Returns((string key, out Microsoft.Extensions.Primitives.StringValues values) =>
+            {
+                values = authHeaderValue;
+                return true;
+            });
         mockRequest.Setup(r => r.Headers).Returns(mockHeaders.Object);
         mockHttpContext.Setup(c => c.Request).Returns(mockRequest.Object);
         _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(mockHttpContext.Object);
@@ -128,8 +145,8 @@ public class SubmissionApiToolsTests
     public async Task GetSubmission_WithValidId_ShouldReturnCleanJsonObject()
     {
         // Arrange
-        var submissionId = 12345L;
-        var expectedJsonResponse = """{"id": 12345, "status": "active", "submitter": "test@example.com"}""";
+        var submissionId = ValidSubmissionId;
+        var expectedJsonResponse = ValidJsonResponse;
 
         var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -163,7 +180,7 @@ public class SubmissionApiToolsTests
     public async Task GetSubmission_WhenApiReturnsError_ShouldThrowSpecificHttpException(HttpStatusCode statusCode)
     {
         // Arrange
-        var submissionId = 12345L;
+        var submissionId = ValidSubmissionId;
         var httpResponse = new HttpResponseMessage(statusCode)
         {
             Content = new StringContent("Error occurred", Encoding.UTF8, "text/plain")
@@ -188,8 +205,8 @@ public class SubmissionApiToolsTests
     public async Task GetSubmission_WithValidId_ShouldMakeCorrectHttpRequest()
     {
         // Arrange
-        var submissionId = 12345L;
-        var expectedJsonResponse = """{"id": 12345}""";
+        var submissionId = ValidSubmissionId;
+        var expectedJsonResponse = "{\"id\": 12345}";
         HttpRequestMessage? capturedRequest = null;
 
         var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
@@ -221,7 +238,7 @@ public class SubmissionApiToolsTests
     public async Task GetSubmission_WhenApiReturnsInvalidJson_ShouldThrowJsonException()
     {
         // Arrange
-        var submissionId = 12345L;
+        var submissionId = ValidSubmissionId;
         var invalidJsonResponse = "{ invalid json }";
 
         var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
@@ -246,7 +263,7 @@ public class SubmissionApiToolsTests
     public async Task GetSubmission_WhenNetworkTimeout_ThrowsTaskCanceledException()
     {
         // Arrange
-        var submissionId = 12345L;
+        var submissionId = ValidSubmissionId;
 
         _mockHttpHandler
             .Protected()
@@ -293,7 +310,7 @@ public class SubmissionApiToolsTests
     public async Task GetSubmission_WhenApiReturnsEmptyResponse_ShouldThrowJsonException()
     {
         // Arrange
-        var submissionId = 12345L;
+        var submissionId = ValidSubmissionId;
         var emptyResponse = "";
 
         var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
@@ -318,7 +335,7 @@ public class SubmissionApiToolsTests
     public async Task GetSubmission_WhenApiReturnsNonJsonContentType_ShouldStillProcessResponse()
     {
         // Arrange
-        var submissionId = 12345L;
+        var submissionId = ValidSubmissionId;
         var validJsonResponse = "{\"id\": 12345, \"status\": \"active\"}";
 
         var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
@@ -347,7 +364,7 @@ public class SubmissionApiToolsTests
     public async Task GetSubmission_WhenHttpContextMissing_ShouldThrowMcpException()
     {
         // Arrange
-        var submissionId = 12345L;
+        var submissionId = ValidSubmissionId;
 
         // Setup HttpContextAccessor to return null (simulating missing context)
         var mockHttpContextAccessorNoContext = new Mock<IHttpContextAccessor>();
@@ -379,20 +396,10 @@ public class SubmissionApiToolsTests
     public async Task GetSubmission_WithInvalidAuthorizationHeader_ShouldThrowMcpException(string authHeader)
     {
         // Arrange
-        var submissionId = 12345L;
+        var submissionId = ValidSubmissionId;
 
         // Setup HttpContext with invalid Authorization header
-        var mockHttpContext = new Mock<HttpContext>();
-        var mockRequest = new Mock<HttpRequest>();
-        var mockHeaders = new HeaderDictionary();
-
-        // Add the authorization header to the dictionary
-        mockHeaders["Authorization"] = authHeader;
-        mockRequest.Setup(r => r.Headers).Returns(mockHeaders);
-        mockHttpContext.Setup(c => c.Request).Returns(mockRequest.Object);
-
-        var mockHttpContextAccessorInvalid = new Mock<IHttpContextAccessor>();
-        mockHttpContextAccessorInvalid.Setup(x => x.HttpContext).Returns(mockHttpContext.Object);
+        var mockHttpContextAccessorInvalid = CreateMockHttpContextAccessor(authHeader);
 
         var mockLogger = new Mock<ILogger<SubmissionApiTools>>();
         var toolsWithInvalidAuth = new SubmissionApiTools(
@@ -410,6 +417,48 @@ public class SubmissionApiToolsTests
             () => toolsWithInvalidAuth.GetSubmission(submissionId));
 
         Assert.Contains("No valid bearer token found in request", exception.Message);
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    /// <summary>
+    /// Creates a mock HttpContext with the specified authorization header
+    /// </summary>
+    private static Mock<IHttpContextAccessor> CreateMockHttpContextAccessor(string? authHeaderValue = null)
+    {
+        var mockHttpContext = new Mock<HttpContext>();
+        var mockRequest = new Mock<HttpRequest>();
+        var mockHeaders = new Mock<IHeaderDictionary>();
+        var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
+
+        if (!string.IsNullOrEmpty(authHeaderValue))
+        {
+            var headerValue = new Microsoft.Extensions.Primitives.StringValues(authHeaderValue);
+            mockHeaders.Setup(h => h["Authorization"]).Returns(headerValue);
+            mockHeaders.Setup(h => h.TryGetValue("Authorization", out It.Ref<Microsoft.Extensions.Primitives.StringValues>.IsAny))
+                .Returns((string key, out Microsoft.Extensions.Primitives.StringValues values) =>
+                {
+                    values = headerValue;
+                    return true;
+                });
+        }
+        else
+        {
+            mockHeaders.Setup(h => h.TryGetValue("Authorization", out It.Ref<Microsoft.Extensions.Primitives.StringValues>.IsAny))
+                .Returns((string key, out Microsoft.Extensions.Primitives.StringValues values) =>
+                {
+                    values = default;
+                    return false;
+                });
+        }
+
+        mockRequest.Setup(r => r.Headers).Returns(mockHeaders.Object);
+        mockHttpContext.Setup(c => c.Request).Returns(mockRequest.Object);
+        mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(mockHttpContext.Object);
+
+        return mockHttpContextAccessor;
     }
 
     #endregion

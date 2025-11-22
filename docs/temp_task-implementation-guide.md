@@ -68,12 +68,14 @@ This guide helps contributors implement the tasks identified in [TASKS.md](../TA
 #### Task 1: Comprehensive Test Suite
 
 **Key Points:**
+
 - Start with unit tests before integration tests
 - Use xUnit as the testing framework (already configured)
 - Mock external dependencies (Identity Server, Submission API)
 - Aim for ≥80% coverage overall, ≥90% for critical code
 
 **Tools:**
+
 ```bash
 # Run tests with coverage
 dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
@@ -84,6 +86,7 @@ reportgenerator -reports:coverage.opencover.xml -targetdir:coverage-report
 ```
 
 **Test Structure:**
+
 ```csharp
 public class SubmissionApiToolsTests
 {
@@ -118,6 +121,7 @@ public class SubmissionApiToolsTests
 #### Task 2: Input Validation
 
 **Key Points:**
+
 - Add validation at the beginning of each method
 - Use ArgumentException for invalid arguments
 - Include parameter name in exception: `nameof(submissionId)`
@@ -125,6 +129,7 @@ public class SubmissionApiToolsTests
 - Test validation with unit tests
 
 **Validation Pattern:**
+
 ```csharp
 public async Task<string> MethodName(string param1, int param2)
 {
@@ -143,12 +148,14 @@ public async Task<string> MethodName(string param1, int param2)
 #### Task 3: Structured Logging
 
 **Key Points:**
+
 - Replace ALL Console.WriteLine with ILogger
 - Use appropriate log levels (Information, Warning, Error)
 - Use structured logging with semantic properties
 - Don't log sensitive data (tokens, secrets, PII)
 
 **Logging Pattern:**
+
 ```csharp
 // Inject ILogger
 private readonly ILogger<ClassName> _logger;
@@ -166,6 +173,7 @@ _logger.LogError(ex, "Failed to process submission {SubmissionId}", submissionId
 #### Task 4: JWT Token Handling
 
 **Key Points:**
+
 - Add NuGet package: `System.IdentityModel.Tokens.Jwt`
 - Use JwtSecurityTokenHandler for parsing
 - Validate token expiration
@@ -173,6 +181,7 @@ _logger.LogError(ex, "Failed to process submission {SubmissionId}", submissionId
 - Log validation failures
 
 **Package Installation:**
+
 ```bash
 cd src/amlink-submissions-mcp-server
 dotnet add package System.IdentityModel.Tokens.Jwt
@@ -181,12 +190,14 @@ dotnet add package System.IdentityModel.Tokens.Jwt
 #### Task 5: HTTP Client Resilience
 
 **Key Points:**
+
 - Add NuGet package: `Microsoft.Extensions.Http.Resilience`
 - Configure in DI container (Program.cs)
 - Use IHttpClientFactory in services
 - Configure retry, circuit breaker, and timeout policies
 
 **Package Installation:**
+
 ```bash
 cd src/amlink-submissions-mcp-server
 dotnet add package Microsoft.Extensions.Http.Resilience
@@ -195,12 +206,14 @@ dotnet add package Microsoft.Extensions.Http.Resilience
 #### Task 6: Correlation IDs
 
 **Key Points:**
+
 - Create middleware to add X-Correlation-ID header
 - Use LogContext.PushProperty for Serilog (if used)
 - Include correlation ID in all log messages
 - Pass correlation ID to downstream services
 
 **Middleware Pattern:**
+
 ```csharp
 public class CorrelationIdMiddleware
 {
@@ -225,12 +238,14 @@ public class CorrelationIdMiddleware
 #### Task 7: Health Checks
 
 **Key Points:**
+
 - Add NuGet package: `Microsoft.Extensions.Diagnostics.HealthChecks`
 - Check self, Identity Server, and Submission API
 - Create multiple endpoints (health, ready, live)
 - Return JSON with detailed status
 
 **Package Installation:**
+
 ```bash
 cd src/amlink-submissions-mcp-server
 dotnet add package Microsoft.Extensions.Diagnostics.HealthChecks
@@ -242,12 +257,14 @@ dotnet add package AspNetCore.HealthChecks.Uris
 #### Task 8: EditorConfig
 
 **Key Points:**
+
 - Create .editorconfig at repository root
 - Follow .NET conventions
 - Enable analyzers in .csproj files
 - Run `dotnet format` to fix existing issues
 
 **Format Command:**
+
 ```bash
 # Install dotnet-format if not already installed
 dotnet tool install -g dotnet-format
@@ -259,6 +276,7 @@ dotnet format
 #### Task 9: Configuration Validation
 
 **Key Points:**
+
 - Create ConfigurationValidator class
 - Call validation in Program.cs before building app
 - Validate all required fields
@@ -268,6 +286,7 @@ dotnet format
 #### Task 10: API Versioning
 
 **Key Points:**
+
 - This is primarily a documentation and planning task
 - Choose versioning approach (tool names, metadata, or server version)
 - Document the strategy

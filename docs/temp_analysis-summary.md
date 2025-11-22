@@ -28,17 +28,20 @@ The repository demonstrates solid architecture and professional development prac
 ## 🔥 Top 3 Priorities
 
 ### 1. 🧪 Add Comprehensive Test Suite (Issue #2)
+
 **Impact:** Critical for reliability and maintainability  
 **Effort:** 3-5 days  
 **Current State:** Only placeholder tests exist
 
 **What's Needed:**
+
 - Unit tests for all MCP tools (GetSubmission, CreateSubmission, ListSubmissions, DeclineSubmission)
 - Unit tests for services (McpService, TokenService)
 - Integration tests for OAuth flow and API calls
 - Test coverage reporting
 
 **Business Value:**
+
 - Prevent bugs in production
 - Enable confident refactoring
 - Reduce debugging time
@@ -47,11 +50,13 @@ The repository demonstrates solid architecture and professional development prac
 ---
 
 ### 2. ✅ Add Input Validation
+
 **Impact:** Security and user experience  
 **Effort:** 1 day  
 **Current State:** No validation on API parameters
 
 **What's Needed:**
+
 ```csharp
 // Example: Before
 public async Task<string> GetSubmission(string submissionId)
@@ -72,6 +77,7 @@ public async Task<string> GetSubmission(string submissionId)
 ```
 
 **Business Value:**
+
 - Better error messages
 - Prevent runtime crashes
 - Improved security
@@ -80,11 +86,13 @@ public async Task<string> GetSubmission(string submissionId)
 ---
 
 ### 3. 📝 Migrate to Structured Logging
+
 **Impact:** Production observability  
 **Effort:** 2 hours  
 **Current State:** 15 Console.WriteLine calls in production code
 
 **What's Needed:**
+
 ```csharp
 // Before
 Console.WriteLine($"Starting server at {serverUrl}");
@@ -94,6 +102,7 @@ logger.LogInformation("Starting server at {ServerUrl}", serverUrl);
 ```
 
 **Business Value:**
+
 - Integration with monitoring tools
 - Searchable, filterable logs
 - Better debugging in production
@@ -134,16 +143,19 @@ logger.LogInformation("Starting server at {ServerUrl}", serverUrl);
 ## 📋 Recommended Implementation Order
 
 ### Week 1: Foundation
+
 1. Add input validation (Day 1)
 2. Migrate Console.WriteLine to ILogger (Day 1)
 3. Start test suite - critical paths (Days 2-5)
 
 ### Week 2: Reliability
+
 4. Add HTTP resilience patterns (Day 1)
 5. Implement health checks (Day 1)
 6. Complete test suite (Days 2-5)
 
 ### Week 3: Polish
+
 7. Add EditorConfig and analyzers (Day 1)
 8. Enhanced error handling with correlation IDs (Day 2)
 9. Improve JWT handling (Day 2)

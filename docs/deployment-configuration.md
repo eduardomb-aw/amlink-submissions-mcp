@@ -105,6 +105,7 @@ IdentityServer__RedirectUri=https://${{ client_app_name }}.azurewebsites.net/oau
 The following variables must be set manually in the Azure Portal for security reasons:
 
 **Both Applications:**
+
 - `OPENAI_API_KEY`: Your OpenAI API key for LLM integration
 
 **Note:** `IDENTITY_SERVER_CLIENT_SECRET` is now automatically configured from GitHub secrets during deployment.
@@ -120,6 +121,7 @@ The following variables must be set manually in the Azure Portal for security re
    - Click **Save**
 
 2. **Azure CLI Method:**
+
    ```bash
    # Set OPENAI_API_KEY for client app
    az webapp config appsettings set \
@@ -158,27 +160,31 @@ az webapp config appsettings list \
 
 After deployment, verify applications are running:
 
-- **Client**: https://app-amlink-submissions-mcp-staging-client.azurewebsites.net
-- **Server**: https://app-amlink-submissions-mcp-staging-server.azurewebsites.net
+- **Client**: <https://app-amlink-submissions-mcp-staging-client.azurewebsites.net>
+- **Server**: <https://app-amlink-submissions-mcp-staging-server.azurewebsites.net>
 
 ## 🚀 Benefits of Automatic Configuration
 
 ### **Consistency**
+
 - Same configuration applied every deployment
 - No manual errors or missed settings
 - Environment-specific URLs automatically generated
 
 ### **Security**
+
 - Configuration stored in Azure, not in code
 - Sensitive secrets still require manual setup
 - No configuration drift between deployments
 
 ### **Maintenance**
+
 - Updates to configuration happen in the pipeline
 - Version controlled configuration changes
 - Easy to replicate across environments
 
 ### **Reliability**
+
 - Configuration applied before app restart
 - Deployment pipeline verifies successful configuration
 - Health checks ensure apps are working after configuration

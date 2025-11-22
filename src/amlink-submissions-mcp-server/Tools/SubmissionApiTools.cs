@@ -58,11 +58,7 @@ public sealed class SubmissionApiTools
         var client = _httpClientFactory.CreateClient("SubmissionApi");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", submissionApiToken);
 
-        // Set User Agent from configuration
-        if (!string.IsNullOrEmpty(_externalApisConfig.SubmissionApi.UserAgent))
-        {
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(_externalApisConfig.SubmissionApi.UserAgent);
-        }
+        // User Agent header is now configured in the HTTP client factory setup.
 
         var response = await client.GetAsync($"submissions/{submissionId}");
 
@@ -74,10 +70,11 @@ public sealed class SubmissionApiTools
 
         var jsonContent = await response.Content.ReadAsStringAsync();
 
-        // Validate JSON by attempting to parse it
-        JsonSerializer.Deserialize<JsonElement>(jsonContent);
+        // Validate JSON by deserializing it to JsonElement
+        var jsonElement = JsonSerializer.Deserialize<JsonElement>(jsonContent);
 
-        return jsonContent;
+        // Return the serialized JsonElement to ensure valid, normalized JSON
+        return JsonSerializer.Serialize(jsonElement);
     }
 
     /// <summary>
@@ -192,7 +189,13 @@ public sealed class SubmissionApiTools
         var httpContext = _httpContextAccessor.HttpContext
            ?? throw new McpException("HTTP context not available");
 
-        var authHeader = httpContext.Request.Headers.Authorization.FirstOrDefault();
+        if (!httpContext.Request.Headers.TryGetValue("Authorization", out var authHeaderValues) ||
+            authHeaderValues.Count == 0)
+        {
+            throw new McpException("No valid bearer token found in request");
+        }
+
+        var authHeader = authHeaderValues.FirstOrDefault();
         if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
         {
             throw new McpException("No valid bearer token found in request");
