@@ -4,6 +4,9 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +46,21 @@ using IChatClient samplingClient = openAIClient.AsIChatClient()
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddHttpClient(); // Add HTTP client factory
+
+// Configure health checks
+const string SelfHealthCheckDescription = "Application is running";
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy(SelfHealthCheckDescription))
+    .AddUrlGroup(
+        new Uri($"{mcpConfig.Url}/health"),
+        name: "mcp_server",
+        failureStatus: HealthStatus.Degraded,
+        timeout: TimeSpan.FromSeconds(5))
+    .AddUrlGroup(
+        new Uri($"{idsConfig.Url}/.well-known/openid-configuration"),
+        name: "identity_server",
+        failureStatus: HealthStatus.Degraded,
+        timeout: TimeSpan.FromSeconds(5));
 
 // Configure named HTTP client for MCP operations
 builder.Services.AddHttpClient("mcp-client", client =>
@@ -164,6 +182,56 @@ app.UseRouting();
 app.UseSession();
 
 app.UseAuthorization();
+
+// Map health check endpoints
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description,
+                duration = e.Value.Duration.TotalMilliseconds
+            }),
+            totalDuration = report.TotalDuration.TotalMilliseconds
+        });
+        await context.Response.WriteAsync(result);
+    }
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready") || check.Name == "self",
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString()
+        });
+        await context.Response.WriteAsync(result);
+    }
+});
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = check => check.Name == "self",
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString()
+        });
+        await context.Response.WriteAsync(result);
+    }
+});
 
 app.MapRazorPages();
 
