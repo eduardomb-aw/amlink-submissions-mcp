@@ -649,19 +649,70 @@ gh run rerun [run-id] --repo owner/repo
 gh pr view [pr-number] --repo owner/repo
 ```
 
+## Branch Protection Rules
+
+The main branch is protected with the following requirements:
+
+### Required Checks
+- **Status Checks**: Both "Validate PR" and "Lint & Security" workflows must pass
+- **PR Reviews**: At least 1 approving review required
+- **Conversation Resolution**: All conversations must be resolved before merge
+- **Stale Review Dismissal**: Reviews are dismissed when new commits are pushed
+
+### Prohibited Actions
+- **Direct Commits**: All changes to main must go through Pull Requests
+- **Force Push**: Force pushes to main are blocked
+- **Branch Deletion**: Main branch cannot be deleted
+- **Admin Bypass**: Repository admins can bypass branch protection rules (enforce_admins: false for flexibility), but are expected to follow the same process unless an exception is required.
+
+### Branch Protection Configuration
+```bash
+# Replace OWNER/REPO with your repository path (e.g., eduardomb-aw/amlink-submissions-mcp)
+
+# View current protection rules
+gh api repos/OWNER/REPO/branches/main/protection
+
+# Update protection rules (use with caution)
+# Replace OWNER/REPO with your repository path
+gh api repos/OWNER/REPO/branches/main/protection -X PUT --input protection.json
+```
 ## Best Practices
 
-1. **Code Formatting First**: **ALWAYS** run `dotnet format --verify-no-changes` before any commit or push - formatting violations cause PR failures
-2. **Minimal Changes**: Make the smallest possible changes to achieve the goal
-3. **Test First**: Write or update tests before implementing features
-4. **Security**: Never commit secrets; always use environment variables
-5. **Documentation**: Update documentation when changing public APIs or workflows
-6. **Code Review**: Follow the repository's PR review process
-7. **Dependencies**: Only add dependencies when absolutely necessary
+1. **Minimal Changes**: Make the smallest possible changes to achieve the goal
+2. **Test First**: Write or update tests before implementing features
+3. **Security**: Never commit secrets; always use environment variables
+4. **Documentation**: Update documentation when changing public APIs or workflows
+5. **Code Review**: Follow the repository's PR review process
+6. **Dependencies**: Only add dependencies when absolutely necessary
+7. **Docker**: Use Docker Compose for local development and testing
 8. **Docker**: Use Docker Compose for local development and testing
-9. **Workflow Validation**: Test workflow changes locally and monitor runs immediately after pushing
-10. **Incremental Fixes**: When workflows fail, fix one issue at a time rather than making multiple changes simultaneously
-11. **Learning Documentation**: Update instructions based on troubleshooting experiences to prevent future issues
+9. **Branch Protection**: All main branch changes must go through PRs with required approvals and passing checks
+10. **Workflow Validation**: Test workflow changes locally and monitor runs immediately after pushing
+11. **Incremental Fixes**: When workflows fail, fix one issue at a time rather than making multiple changes simultaneously
+12. **Learning Documentation**: Update instructions based on troubleshooting experiences to prevent future issues
+
+## Continuous Improvement
+
+### Recording New Instructions
+When encountering and resolving new issues:
+
+1. **Document the Problem**: Record the specific error message, failure pattern, or issue encountered
+2. **Document the Solution**: Capture the exact steps taken to resolve the issue
+3. **Add to Troubleshooting**: Update the relevant troubleshooting section with the new pattern
+4. **Update Best Practices**: If the issue reveals a process improvement, add it to the best practices
+5. **Commit Knowledge**: Always commit instruction updates to preserve institutional knowledge
+
+### Pattern Recognition
+- Look for recurring issues across different PRs or workflows
+- Identify root causes rather than just symptoms
+- Create systematic solutions that prevent issue recurrence
+- Build comprehensive troubleshooting patterns that others can follow
+
+### Knowledge Preservation
+- Each resolved issue is a learning opportunity for the entire team
+- Detailed troubleshooting patterns reduce future debugging time
+- Well-documented solutions enable faster onboarding of new developers
+- Institutional knowledge prevents the same issues from happening repeatedly
 
 ### Pre-Commit Workflow (MANDATORY)
 ```bash
