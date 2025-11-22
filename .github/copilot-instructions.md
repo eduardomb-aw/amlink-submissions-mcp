@@ -204,6 +204,56 @@ public async Task MethodName_Scenario_ExpectedBehavior()
 
 ## Coding Standards
 
+### Code Formatting Requirements
+
+**MANDATORY**: Always check code formatting before pushing code or creating PRs. Code formatting violations will cause PR validation failures.
+
+#### Pre-Push Formatting Checklist
+1. **Run Format Check**: Always run `dotnet format --verify-no-changes` before any commit
+2. **Fix Formatting**: If formatting issues are found, run `dotnet format` to fix them automatically
+3. **Verify Clean State**: Re-run `dotnet format --verify-no-changes` to ensure all issues are resolved
+4. **Commit Format Fixes**: If formatting changes were made, commit them separately with a clear message
+
+#### Required Commands Before Every Push
+```bash
+# 1. Check for formatting issues
+dotnet format --verify-no-changes
+
+# 2. If issues found, fix them automatically
+dotnet format
+
+# 3. Verify formatting is now clean
+dotnet format --verify-no-changes
+
+# 4. If changes were made, commit them
+git add -A
+git commit -m "Fix code formatting issues"
+
+# 5. Run tests to ensure formatting didn't break anything
+dotnet test --configuration Release
+
+# 6. Now safe to push
+git push
+```
+
+#### Common Formatting Issues
+- **Whitespace**: Mixed tabs/spaces, trailing whitespace, inconsistent line endings
+- **Indentation**: Incorrect indentation levels, inconsistent spacing
+- **Line Endings**: Mixed CRLF/LF line endings across files
+- **Code Style**: Inconsistent brace placement, spacing around operators
+
+#### IDE Configuration
+- Configure your IDE to show whitespace characters
+- Set up auto-formatting on save where possible
+- Use consistent tab/space settings (project uses spaces)
+- Enable EditorConfig support for consistent formatting rules
+
+#### Why This Matters
+- **PR Validation**: Formatting violations cause automatic PR failures
+- **Code Quality**: Consistent formatting improves code readability
+- **Team Efficiency**: Reduces time spent on formatting discussions in code reviews
+- **CI/CD Reliability**: Prevents build failures due to formatting issues
+
 ### General Guidelines
 - Use C# 12 features and .NET 10 idioms
 - Enable nullable reference types (`<Nullable>enable</Nullable>`)
@@ -574,13 +624,23 @@ gh pr view [pr-number] --repo owner/repo
 
 ## Best Practices
 
-1. **Minimal Changes**: Make the smallest possible changes to achieve the goal
-2. **Test First**: Write or update tests before implementing features
-3. **Security**: Never commit secrets; always use environment variables
-4. **Documentation**: Update documentation when changing public APIs or workflows
-5. **Code Review**: Follow the repository's PR review process
-6. **Dependencies**: Only add dependencies when absolutely necessary
-7. **Docker**: Use Docker Compose for local development and testing
-8. **Workflow Validation**: Test workflow changes locally and monitor runs immediately after pushing
-9. **Incremental Fixes**: When workflows fail, fix one issue at a time rather than making multiple changes simultaneously
-10. **Learning Documentation**: Update instructions based on troubleshooting experiences to prevent future issues
+1. **Code Formatting First**: **ALWAYS** run `dotnet format --verify-no-changes` before any commit or push - formatting violations cause PR failures
+2. **Minimal Changes**: Make the smallest possible changes to achieve the goal
+3. **Test First**: Write or update tests before implementing features
+4. **Security**: Never commit secrets; always use environment variables
+5. **Documentation**: Update documentation when changing public APIs or workflows
+6. **Code Review**: Follow the repository's PR review process
+7. **Dependencies**: Only add dependencies when absolutely necessary
+8. **Docker**: Use Docker Compose for local development and testing
+9. **Workflow Validation**: Test workflow changes locally and monitor runs immediately after pushing
+10. **Incremental Fixes**: When workflows fail, fix one issue at a time rather than making multiple changes simultaneously
+11. **Learning Documentation**: Update instructions based on troubleshooting experiences to prevent future issues
+
+### Pre-Commit Workflow (MANDATORY)
+```bash
+# Before EVERY commit and push - run this sequence:
+dotnet format --verify-no-changes    # Check formatting
+dotnet build --configuration Release  # Ensure builds cleanly
+dotnet test --configuration Release   # Ensure all tests pass
+# Only push if all three commands succeed without errors
+```
