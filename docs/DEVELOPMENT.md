@@ -130,7 +130,7 @@ docker-compose down
 The project includes full VS Code debugging support for Docker containers:
 
 1. **Start debug containers**: `docker-compose up -d`
-2. **Attach debugger**: 
+2. **Attach debugger**:
    - Open Command Palette (`Ctrl+Shift+P`)
    - Type "Docker: Attach Visual Studio Code"
    - Select container: `amlink-mcp-server` or `amlink-mcp-client`
