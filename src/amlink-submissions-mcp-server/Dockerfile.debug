@@ -1,10 +1,10 @@
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY ["amlink-submissions-mcp-server.csproj", "amlink-submissions-mcp-server/"]
-RUN dotnet restore "amlink-submissions-mcp-server/amlink-submissions-mcp-server.csproj"
-COPY . amlink-submissions-mcp-server/
-WORKDIR "/src/amlink-submissions-mcp-server"
+COPY ["src/amlink-submissions-mcp-server/amlink-submissions-mcp-server.csproj", "src/amlink-submissions-mcp-server/"]
+RUN dotnet restore "src/amlink-submissions-mcp-server/amlink-submissions-mcp-server.csproj"
+COPY . .
+WORKDIR "/src/src/amlink-submissions-mcp-server"
 RUN dotnet build "amlink-submissions-mcp-server.csproj" -c Debug -o /app/build
 
 # Publish stage
@@ -14,22 +14,6 @@ RUN dotnet publish "amlink-submissions-mcp-server.csproj" -c Debug -o /app/publi
 # Final stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
-
-# Install vsdbg debugger with retry logic
-# Set shell options for better error handling
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl=7.88.1-10+deb12u8 \
-    unzip=6.0-28 \
-    wget=1.21.3-1+b2 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install vsdbg with retry and fallback
-RUN for i in 1 2 3; do \
-        curl -sSL --connect-timeout 30 --max-time 300 https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg && break; \
-        echo "Attempt $i failed, retrying in 5 seconds..."; \
-        sleep 5; \
-    done || echo "Warning: Could not install vsdbg debugger, continuing without debug support"
 
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "amlink-submissions-mcp-server.dll"]

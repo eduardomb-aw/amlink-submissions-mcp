@@ -4,13 +4,19 @@
 services:
   amlink-mcp-server:
     build:
-      dockerfile: Dockerfile.debug
+      context: .
+      dockerfile: src/amlink-submissions-mcp-server/Dockerfile.debug
+      args:
+        - configuration=Debug
     ports:
       - "8080:80"    # Keep production port mapping
       - "8443:443"   # Keep production HTTPS port
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80;https://+:443
+      - DOTNET_USE_POLLING_FILE_WATCHER=true  # Enable file watcher for hot reload
+      - DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=true  # Suppress browser launch in container
+      - DOTNET_WATCH_RESTART_ON_RUDE_EDIT=true  # Allow restarts on breaking changes
       - ExternalApis__SubmissionApi__BaseUrl=https://amlink-submission-api-dev.amwins.net/v1/
       - ExternalApis__SubmissionApi__RequiredScope=amlink-submission-api
       - ExternalApis__SubmissionApi__UserAgent=mcp-submission-client
@@ -19,27 +25,33 @@ services:
       - IdentityServer__GrantType=authorization_code
       - IdentityServer__Scopes=amlink-maintenance-api amlink-submission-api amlink-policy-api amlink-doc-api amwins-graphadapter-api
       - IdentityServer__Url=https://identitydev.amwins.com
-      - McpServer__BrowserUrl=http://localhost:7072
+      - McpServer__BrowserUrl=http://localhost:8080
       # Use default values for development
       - IdentityServer__ClientSecret=${IDENTITY_SERVER_CLIENT_SECRET:-MZ48Q~PB-wMwf18MWtO3eRZzI6Ed44d9krvNuawO}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-dummy-key-for-docker}
       - Server__Url=http://amlink-mcp-server:80
     volumes:
-      # Mount source code for hot reload
-      - ./src/amlink-submissions-mcp-server:/src/amlink-submissions-mcp-server:cached
+      - ~/.vsdbg:/remote_debugger:rw
+      - ./src/amlink-submissions-mcp-server:/amlink-submissions-mcp-server:cached  # Map to root level for debugger
       - ~/.nuget/packages:/root/.nuget/packages:ro
       - ~/.aspnet/https:/https:ro
     restart: "no"  # Don't auto-restart in development
 
   amlink-mcp-client:
     build:
-      dockerfile: Dockerfile.debug
+      context: .
+      dockerfile: src/amlink-submissions-mcp-client/Dockerfile.debug
+      args:
+        - configuration=Debug
     ports:
       - "5000:80"    # Keep same client port
       - "5001:443"   # Keep production HTTPS port
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80;https://+:443
+      - DOTNET_USE_POLLING_FILE_WATCHER=true  # Enable file watcher for hot reload
+      - DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=true  # Suppress browser launch in container
+      - DOTNET_WATCH_RESTART_ON_RUDE_EDIT=true  # Allow restarts on breaking changes
       - IdentityServer__ClientId=al-mcp-client
       - IdentityServer__GrantType=authorization_code
       - IdentityServer__RedirectUri=https://localhost:5001/oauth/callback
@@ -47,14 +59,14 @@ services:
       - IdentityServer__Scopes=amlink-maintenance-api amlink-submission-api amlink-policy-api amlink-doc-api amwins-graphadapter-api
       - IdentityServer__ServerClientId=al-mcp-client
       - IdentityServer__Url=https://identitydev.amwins.com
-      - McpServer__BrowserUrl=http://localhost:8080  # Point to production server port
+      - McpServer__BrowserUrl=http://localhost:8080  # Point to server port
       - McpServer__Url=http://amlink-mcp-server:80
       # Use default values for development
       - IdentityServer__ClientSecret=${IDENTITY_SERVER_CLIENT_SECRET:-MZ48Q~PB-wMwf18MWtO3eRZzI6Ed44d9krvNuawO}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-dummy-key-for-docker}
     volumes:
-      # Mount source code for hot reload
-      - ./src/amlink-submissions-mcp-client:/src/amlink-submissions-mcp-client:cached
+      - ~/.vsdbg:/remote_debugger:rw
+      - ./src/amlink-submissions-mcp-client:/amlink-submissions-mcp-client:cached  # Map to root level for debugger
       - ~/.nuget/packages:/root/.nuget/packages:ro
       - ~/.aspnet/https:/https:ro
     restart: "no"  # Don't auto-restart in development

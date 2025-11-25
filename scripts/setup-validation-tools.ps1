@@ -73,15 +73,19 @@ if (Test-CommandExists "hadolint") {
             $hadolintDir = Split-Path $destination
             
             if ($userPath -notlike "*$hadolintDir*") {
-                Write-Host "   Adding hadolint to PATH..."
+                Write-Host "   Adding hadolint directory to PATH..."
                 [Environment]::SetEnvironmentVariable("PATH", "$userPath;$hadolintDir", "User")
-                $env:PATH = "$env:PATH;$hadolintDir"
             }
             
+            # Add to current session PATH
+            $env:PATH += ";$hadolintDir"
+            
+            # Test if hadolint is now available
             if (Test-CommandExists "hadolint") {
-                Write-Host "✅ hadolint installed successfully" -ForegroundColor Green
+                Write-Host "✅ hadolint installed successfully and available in PATH" -ForegroundColor Green
             } else {
-                Write-Host "⚠️  hadolint installed but not in PATH. You may need to restart your terminal." -ForegroundColor Yellow
+                Write-Host "⚠️  hadolint installed but may require terminal restart for persistent PATH access" -ForegroundColor Yellow
+                Write-Host "   For current session, hadolint should be available" -ForegroundColor Gray
             }
         } catch {
             Write-Host "❌ Failed to install hadolint: $($_.Exception.Message)" -ForegroundColor Red
