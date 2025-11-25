@@ -65,10 +65,10 @@ Identity Server 4.
 4. **Start the services**
 
    ```bash
-   # Development with hot reload
+   # Development with debugging support (automatically loads docker-compose.override.yml)
    docker-compose up -d
    
-   # Production build
+   # Production build (no debugging)
    docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
    ```
 
@@ -76,6 +76,30 @@ Identity Server 4.
    - **Client (HTTPS)**: <https://localhost:5001>
    - **Client (HTTP)**: <http://localhost:5000>
    - **Server (HTTPS)**: <https://localhost:8443>
+   - **Server (HTTP)**: <http://localhost:8080>
+
+### Debugging
+
+Full VS Code debugging support is available for Docker containers:
+
+```bash
+# Start containers with debugging support
+docker-compose up -d
+
+# Attach VS Code debugger:
+# 1. Open Command Palette (Ctrl+Shift+P)
+# 2. Type "Docker: Attach Visual Studio Code"  
+# 3. Select container: amlink-mcp-server or amlink-mcp-client
+# 4. Set breakpoints and debug!
+```
+
+**Debug features:**
+- Hot reload for code changes
+- Full breakpoint debugging
+- Variable inspection
+- Source code mapping
+
+📖 **Detailed debugging guide**: [DEBUG.md](DEBUG.md)
 
 ## 🔄 CI/CD & Deployment
 
@@ -441,6 +465,7 @@ This prevents PR validation failures and provides immediate feedback in 30-60 se
 - **[temp_task-implementation-guide.md](docs/temp_task-implementation-guide.md)**
   \- Step-by-step guide for implementing tasks
 - **[DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Development setup and guidelines
+- **[DEBUG.md](DEBUG.md)** - Comprehensive Docker debugging guide with VS Code integration
 
 ## 📄 License
 

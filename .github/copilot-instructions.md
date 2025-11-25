@@ -1,5 +1,32 @@
 # Copilot Instructions for AmLink Submissions MCP
 
+## 🚨 CRITICAL: PRE-PUSH VALIDATION MANDATORY 🚨
+
+**⚠️ BEFORE ANY `git push` COMMAND - ALWAYS RUN PRE-PUSH VALIDATION FIRST ⚠️**
+
+```powershell
+# MANDATORY - Run this BEFORE every push
+.\scripts\pre-push-validation.ps1
+
+# If validation fails - FIX ISSUES, then re-run validation
+# NEVER push until validation passes with exit code 0
+```
+
+**🔥 FAILURE TO RUN PRE-PUSH VALIDATION WILL:**
+- ❌ Cause PR validation failures in GitHub Actions
+- ❌ Waste hours in fix → push → fail cycles
+- ❌ Block other developers when builds break
+- ❌ Violate project quality standards
+
+**📋 Pre-Push Validation Checklist (EVERY TIME):**
+- [ ] Run `.\scripts\setup-validation-tools.ps1` (once per environment)
+- [ ] Run `.\scripts\pre-push-validation.ps1` (before every push)
+- [ ] Validation passes with exit code 0
+- [ ] Fix any errors and re-run validation
+- [ ] Only then proceed with `git push`
+
+---
+
 ## Project Overview
 
 This is a Model Context Protocol (MCP) server and client implementation for AmLink submissions API integration. The project consists of:
@@ -189,8 +216,11 @@ public async Task MethodName_Scenario_ExpectedBehavior()
 4. **Commit Failing Tests**: Push to feature branch - PR validation will fail (expected)
 5. **Implement Code**: Write minimal code to make tests pass
 6. **Refactor**: Improve code quality while keeping tests green
-7. **Pre-Push Validation**: **MANDATORY** - Run `.\scripts\pre-push-validation.ps1` before pushing
-8. **Validate**: Ensure all tests pass and PR validation succeeds
+7. **🚨 PRE-PUSH VALIDATION**: **⚠️ ABSOLUTELY MANDATORY ⚠️** - Run `.\scripts\pre-push-validation.ps1` before ANY push
+   - **NEVER SKIP THIS STEP** - It prevents hours of PR validation failures
+   - **MUST PASS** with exit code 0 before pushing
+   - **FIX ALL ISSUES** before proceeding
+8. **Validate**: Ensure validation passes and all tests succeed before push
 9. **Merge**: Only merge when all tests pass - main branch stays clean
 
 ### Branch Protection Strategy
@@ -671,18 +701,33 @@ docker-compose down && docker-compose up -d
 - [ ] Port mappings don't conflict with host services
 - [ ] OAuth redirect URIs match Identity Server configuration exactly
 
-## Pre-Push Validation
+## 🚨 PRE-PUSH VALIDATION - ABSOLUTELY MANDATORY 🚨
 
-### Local Validation Requirements
-To prevent PR validation failures, **ALWAYS** run pre-push validation before pushing changes:
+### ⚠️ CRITICAL REQUIREMENT - NEVER SKIP THIS STEP ⚠️
+
+**🔥 BEFORE ANY `git push` - RUN PRE-PUSH VALIDATION FIRST 🔥**
 
 ```powershell
-# One-time setup (installs required tools)
+# ONE-TIME SETUP (installs required tools)
 .\scripts\setup-validation-tools.ps1
 
-# Before every push (mirrors PR validation exactly)
+# 🚨 MANDATORY BEFORE EVERY PUSH (mirrors PR validation exactly) 🚨
 .\scripts\pre-push-validation.ps1
+
+# ❌ NEVER run 'git push' until this script passes with exit code 0
 ```
+
+**⛔ ABSOLUTE RULES - NO EXCEPTIONS:**
+- 🚫 **NEVER** push without running pre-push validation first
+- 🚫 **NEVER** push if validation fails (exit code != 0)
+- 🚫 **NEVER** ignore validation errors
+- 🚫 **NEVER** push "just to see if it works" in CI/CD
+
+**✅ CORRECT WORKFLOW:**
+1. Make code changes
+2. **RUN** `.\scripts\pre-push-validation.ps1`
+3. **IF FAILS**: Fix issues, go back to step 2
+4. **IF PASSES**: Now safe to `git push`
 
 ### Pre-Push Validation Steps
 The pre-push validation script mirrors the GitHub Actions PR validation workflow exactly:
@@ -703,12 +748,20 @@ The pre-push validation script mirrors the GitHub Actions PR validation workflow
 
 **Markdownlint Configuration Strategy**: The `.markdownlint.json` file focuses on critical structural issues while allowing flexibility on verbose formatting rules. Key disabled rules: line-length (MD013), blanks-around-headings (MD022), ordered-list-prefix (MD029) to balance validation with practicality.
 
-### Pre-Push Validation Rules
-1. **Mandatory Usage**: Never push without running `.\scripts\pre-push-validation.ps1`
-2. **Tool Installation**: Run `.\scripts\setup-validation-tools.ps1` once per environment
-3. **Zero Tolerance**: Script must pass with exit code 0 before pushing
-4. **Complete Coverage**: Script validates 100% of what GitHub Actions PR validation checks
-5. **Time Investment**: 30-60 seconds locally vs. hours of PR iteration cycles
+### 🔥 IRON-CLAD PRE-PUSH VALIDATION RULES 🔥
+
+**⚠️ THESE RULES ARE ABSOLUTELY NON-NEGOTIABLE ⚠️**
+
+1. **🚨 MANDATORY USAGE**: **NEVER EVER** push without running `.\scripts\pre-push-validation.ps1` FIRST
+2. **🔧 TOOL INSTALLATION**: Run `.\scripts\setup-validation-tools.ps1` once per environment
+3. **⛔ ZERO TOLERANCE**: Script **MUST** pass with exit code 0 before ANY push
+4. **📋 COMPLETE COVERAGE**: Script validates 100% of what GitHub Actions PR validation checks
+5. **⏱️ TIME INVESTMENT**: 30-60 seconds locally vs. HOURS of PR iteration cycles
+6. **🚫 NO SHORTCUTS**: "Quick fixes" or "small changes" still require validation
+7. **🔒 NO BYPASSING**: Even documentation-only changes must pass validation
+8. **💯 EVERY SINGLE TIME**: This applies to every commit, every push, every branch
+
+**🎯 REMEMBER: One forgotten validation = Hours of wasted time for everyone**
 
 ### Pre-Push Validation Benefits
 - **Immediate Feedback**: Catch issues in seconds instead of waiting for CI/CD
@@ -892,6 +945,28 @@ When encountering and resolving new issues:
 - Detailed troubleshooting patterns reduce future debugging time
 - Well-documented solutions enable faster onboarding of new developers
 - Institutional knowledge prevents the same issues from happening repeatedly
+
+### 🚨 CRITICAL: NEVER FORGET PRE-PUSH VALIDATION 🚨
+
+**⚠️ COMMON MISTAKE ALERT ⚠️**
+
+**The #1 recurring mistake is forgetting to run pre-push validation before `git push`**
+
+**📊 IMPACT OF FORGETTING PRE-PUSH VALIDATION:**
+- 🕐 **Time Wasted**: 2-4 hours fixing PR validation failures
+- 🔄 **Cycle Repetition**: Multiple push → fail → fix → push cycles  
+- 🚫 **Blocked Work**: Other developers can't merge until issues resolved
+- 😤 **Frustration**: Preventable delays and rework
+- 💸 **Cost**: Developer time spent on avoidable issues
+
+**🎯 SOLUTION: MAKE PRE-PUSH VALIDATION AUTOMATIC**
+
+```powershell
+# 🚨 ALWAYS RUN BEFORE ANY PUSH - NO EXCEPTIONS 🚨
+.\scripts\pre-push-validation.ps1
+
+# If this becomes habit, you'll NEVER waste time on PR failures again
+```
 
 ### Pre-Commit Workflow (MANDATORY)
 ```bash
