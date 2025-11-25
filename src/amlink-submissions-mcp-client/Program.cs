@@ -134,6 +134,7 @@ var app = builder.Build();
 // Display startup information
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("Protected MCP Client");
+logger.LogInformation("Process ID: {ProcessId}", Environment.ProcessId);
 logger.LogInformation("Connecting to MCP server at {McpServerUrl}", mcpConfig.Url);
 logger.LogInformation("Using Identity Server: {IdentityServerUrl}", idsConfig.Url);
 logger.LogInformation("Client ID: {ClientId}", idsConfig.ClientId);

@@ -3,7 +3,7 @@
 services:
   amlink-mcp-server:
     build:
-      context: ./src/amlink-submissions-mcp-server
+      context: ./src/amlink-submissions-mcp-server/
       dockerfile: Dockerfile
     container_name: amlink-mcp-server
     ports:
@@ -34,7 +34,7 @@ services:
 
   amlink-mcp-client:
     build:
-      context: ./src/amlink-submissions-mcp-client
+      context: ./src/amlink-submissions-mcp-client/
       dockerfile: Dockerfile
     container_name: amlink-mcp-client
     ports:
