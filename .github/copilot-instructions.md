@@ -1,6 +1,6 @@
 # Copilot Instructions for AmLink Submissions MCP
 
-# 🚨 CRITICAL: PRE-PUSH VALIDATION MANDATORY 🚨
+## 🚨 CRITICAL: PRE-PUSH VALIDATION MANDATORY 🚨
 
 **⚠️ BEFORE ANY `git push` COMMAND - ALWAYS RUN PRE-PUSH VALIDATION FIRST ⚠️**
 
