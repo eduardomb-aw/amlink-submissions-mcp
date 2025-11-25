@@ -112,7 +112,7 @@ dotnet dev-certs https --trust
 ### Running Locally
 
 ```bash
-# Development mode (hot reload)
+# Development mode with debugging support (automatically loads docker-compose.override.yml)
 docker-compose up -d
 
 # View logs
@@ -124,6 +124,25 @@ docker-compose up -d --build
 # Stop services
 docker-compose down
 ```
+
+### Debugging with VS Code
+
+The project includes full VS Code debugging support for Docker containers:
+
+1. **Start debug containers**: `docker-compose up -d`
+2. **Attach debugger**: 
+   - Open Command Palette (`Ctrl+Shift+P`)
+   - Type "Docker: Attach Visual Studio Code"
+   - Select container: `amlink-mcp-server` or `amlink-mcp-client`
+3. **Set breakpoints** and debug your code
+
+**Features available in debug mode:**
+- Hot reload for code changes
+- Full VS Code debugger integration
+- Source code volume mapping
+- Debug builds with symbols
+
+For detailed debugging instructions, see [DEBUG.md](../DEBUG.md).
 
 ### Code Formatting (MANDATORY)
 
