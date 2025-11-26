@@ -1,7 +1,7 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace amlink_submissions_mcp_bff.Controllers;
 
@@ -34,13 +34,13 @@ public class AuthenticationController : ControllerBase
         var redirectUri = $"{Request.Scheme}://{Request.Host}/api/auth/callback";
         var state = Guid.NewGuid().ToString();
         var nonce = Guid.NewGuid().ToString();
-        
+
         // Generate PKCE parameters
         var codeVerifier = GenerateCodeVerifier();
         var codeChallenge = GenerateCodeChallenge(codeVerifier);
-        
+
         // Store PKCE and state in session for validation (if session available)
-        try 
+        try
         {
             HttpContext.Session.SetString("code_verifier", codeVerifier);
             HttpContext.Session.SetString("oauth_state", state);
@@ -50,7 +50,7 @@ public class AuthenticationController : ControllerBase
         {
             // Session not available in test environment - that's OK for GREEN phase
         }
-        
+
         var authUrl = $"{identityServerUrl}/oauth2/authorize?" +
                       $"client_id={clientId}&" +
                       $"response_type=code&" +
@@ -69,9 +69,9 @@ public class AuthenticationController : ControllerBase
             SameSite = SameSiteMode.Strict,
             Expires = DateTimeOffset.UtcNow.AddHours(8)
         };
-        
+
         Response.Cookies.Append("AspNetCore.Identity.Application", "pending_auth_session", cookieOptions);
-        
+
         return Redirect(authUrl);
     }
 
@@ -82,7 +82,7 @@ public class AuthenticationController : ControllerBase
     [Route("/signin-oidc")]
     public async Task<IActionResult> Callback(string? code, string? state, string? error = null)
     {
-        _logger.LogInformation("OAuth callback received with code: {HasCode}, state: {State}, error: {Error}", 
+        _logger.LogInformation("OAuth callback received with code: {HasCode}, state: {State}, error: {Error}",
             !string.IsNullOrEmpty(code), state, error);
 
         if (!string.IsNullOrEmpty(error))
@@ -109,7 +109,7 @@ public class AuthenticationController : ControllerBase
         // 1. Exchange authorization code for tokens
         // 2. Validate the ID token
         // 3. Create authenticated session
-        
+
         // For GREEN phase: Create a basic authenticated session that satisfies tests
         await CreateAuthenticatedSession("test-user", "test.user@example.com");
 
@@ -121,7 +121,7 @@ public class AuthenticationController : ControllerBase
             SameSite = SameSiteMode.Strict,
             Expires = DateTimeOffset.UtcNow.AddHours(8)
         };
-        
+
         Response.Cookies.Append("AspNetCore.Identity.Application", "authenticated_session", cookieOptions);
 
         // Clean up OAuth session data
@@ -139,7 +139,7 @@ public class AuthenticationController : ControllerBase
     public IActionResult Status()
     {
         var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
-        
+
         if (!isAuthenticated)
         {
             Response.Headers.Append("WWW-Authenticate", "Bearer realm=\"BFF\"");
@@ -167,7 +167,7 @@ public class AuthenticationController : ControllerBase
     {
         var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
         var userName = User.Identity?.Name ?? "anonymous";
-        
+
         _logger.LogInformation("Logout requested for user: {User} (authenticated: {IsAuthenticated})", userName, isAuthenticated);
 
         // Always attempt to clear authentication session (safe even if not authenticated)
@@ -184,7 +184,7 @@ public class AuthenticationController : ControllerBase
             SameSite = SameSiteMode.Strict,
             Expires = DateTimeOffset.UtcNow.AddDays(-1) // Expire in the past
         };
-        
+
         Response.Cookies.Append("AspNetCore.Identity.Application", "", cookieOptions);
 
         // Construct Identity Server logout URL
@@ -204,17 +204,17 @@ public class AuthenticationController : ControllerBase
         // Check Origin header for CSRF protection
         var origin = Request.Headers["Origin"].FirstOrDefault();
         var host = Request.Host.Value;
-        
+
         if (!string.IsNullOrEmpty(origin))
         {
             var originUri = new Uri(origin);
-            if (!originUri.Host.Equals(host, StringComparison.OrdinalIgnoreCase) && 
+            if (!originUri.Host.Equals(host, StringComparison.OrdinalIgnoreCase) &&
                 !originUri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
             {
                 return StatusCode(403, new { error = "CSRF protection: Invalid origin" });
             }
         }
-        
+
         return Ok(new { success = true, message = "Sensitive action completed" });
     }
 

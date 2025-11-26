@@ -1,7 +1,7 @@
 using System.Net;
+using amlink_submissions_mcp.Tests.Bff.TestUtilities;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using amlink_submissions_mcp.Tests.Bff.TestUtilities;
 using Xunit;
 
 namespace amlink_submissions_mcp.Tests.Bff.Authentication;
@@ -18,7 +18,7 @@ public class AuthenticationFlowTests : IClassFixture<BffWebApplicationFactory>, 
     public AuthenticationFlowTests(BffWebApplicationFactory factory)
     {
         _factory = factory;
-        
+
         // Configure client to NOT follow redirects so we can test the redirect response itself
         var clientOptions = new WebApplicationFactoryClientOptions
         {
@@ -43,7 +43,7 @@ public class AuthenticationFlowTests : IClassFixture<BffWebApplicationFactory>, 
         // 2. No login endpoint is configured
         // 3. No Identity Server integration is implemented
         Assert.Equal(HttpStatusCode.Found, response.StatusCode);
-        
+
         var location = response.Headers.Location?.ToString();
         Assert.NotNull(location);
         Assert.Contains(expectedRedirectHost, location);
@@ -58,16 +58,16 @@ public class AuthenticationFlowTests : IClassFixture<BffWebApplicationFactory>, 
         // Arrange
         var authCode = "test_authorization_code";
         var state = "test_state_value";
-        
+
         // First, set up the session state as if login was called
         var loginResponse = await _client.GetAsync("/api/auth/login");
         Assert.Equal(HttpStatusCode.Found, loginResponse.StatusCode);
-        
+
         // Extract state from the redirect URL
         var location = loginResponse.Headers.Location?.ToString();
         var stateMatch = System.Text.RegularExpressions.Regex.Match(location!, @"state=([^&]+)");
         var actualState = stateMatch.Success ? stateMatch.Groups[1].Value : state;
-        
+
         var callbackUrl = $"/signin-oidc?code={authCode}&state={actualState}";
 
         // Act
@@ -79,15 +79,15 @@ public class AuthenticationFlowTests : IClassFixture<BffWebApplicationFactory>, 
         // 2. No session cookie creation logic exists
         // 3. Microsoft.Identity.Web is not configured
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        
+
         // Verify session cookie is created
         var cookies = response.Headers.GetValues("Set-Cookie");
         var sessionCookie = cookies.FirstOrDefault(c => c.Contains("AspNetCore.Identity.Application"));
         Assert.NotNull(sessionCookie);
-        
+
         // Note: In test environments, cookie attributes may not appear in header strings
         // The important thing is that the authentication cookie is created
-        Assert.True(sessionCookie.Length > "AspNetCore.Identity.Application=".Length, 
+        Assert.True(sessionCookie.Length > "AspNetCore.Identity.Application=".Length,
             "Cookie should have a value");
     }
 
@@ -115,7 +115,7 @@ public class AuthenticationFlowTests : IClassFixture<BffWebApplicationFactory>, 
             {
                 // For authenticated tests, use Test scheme as default
                 services.AddAuthentication("Test");
-                
+
                 services.Configure<TestAuthenticationSchemeOptions>("Test", options =>
                 {
                     options.IsAuthenticated = true;
@@ -130,10 +130,10 @@ public class AuthenticationFlowTests : IClassFixture<BffWebApplicationFactory>, 
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        
+
         var content = await response.Content.ReadAsStringAsync();
         var userInfo = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(content);
-        
+
         Assert.NotNull(userInfo);
         Assert.True(userInfo.ContainsKey("isAuthenticated"));
         Assert.True(userInfo.ContainsKey("name"));
@@ -166,12 +166,12 @@ public class AuthenticationFlowTests : IClassFixture<BffWebApplicationFactory>, 
 
         // Assert
         Assert.Equal(HttpStatusCode.Found, response.StatusCode);
-        
+
         var location = response.Headers.Location?.ToString();
         Assert.NotNull(location);
         Assert.Contains(_factory.TestIdentityServerUrl, location);
         Assert.Contains("post_logout_redirect_uri", location);
-        
+
         // Verify session cookie is cleared (cookie set with expired date)
         var setCookieHeaders = response.Headers.GetValues("Set-Cookie").ToArray();
         var clearedCookie = setCookieHeaders.FirstOrDefault(c => c.Contains("AspNetCore.Identity.Application"));

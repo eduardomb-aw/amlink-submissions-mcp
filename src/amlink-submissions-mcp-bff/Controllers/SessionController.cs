@@ -77,7 +77,7 @@ public class SessionController : ControllerBase
 
         // Clear session data
         HttpContext.Session.Clear();
-        
+
         // In a real implementation, we would also:
         // 1. Remove session from session store
         // 2. Invalidate refresh tokens
@@ -126,7 +126,7 @@ public class SessionController : ControllerBase
     {
         // In a real implementation, we would query the session store
         // for all active sessions for the current user
-        
+
         var sessions = new[]
         {
             new

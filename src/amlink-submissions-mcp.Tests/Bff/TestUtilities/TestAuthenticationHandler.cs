@@ -15,12 +15,12 @@ public class TestAuthenticationSchemeOptions : AuthenticationSchemeOptions
     /// Gets or sets whether the user should be authenticated by default.
     /// </summary>
     public bool IsAuthenticated { get; set; } = false;
-    
+
     /// <summary>
     /// Gets or sets the test user identity name.
     /// </summary>
     public string? UserName { get; set; } = "test-user";
-    
+
     /// <summary>
     /// Gets or sets additional claims for the test user.
     /// </summary>
@@ -53,7 +53,7 @@ public class TestAuthenticationHandler : AuthenticationHandler<TestAuthenticatio
             new Claim("sub", "test-user-id"),
             new Claim("email", "test@example.com")
         };
-        
+
         claims.AddRange(Options.Claims);
 
         var identity = new ClaimsIdentity(claims, "Test");

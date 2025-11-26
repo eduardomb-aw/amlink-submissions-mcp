@@ -20,18 +20,18 @@ public class BffWebApplicationFactory : WebApplicationFactory<amlink_submissions
 {
     private const string TestIdentityServerUrlValue = "https://test-identity-server.example.com";
     private const string TestClientIdValue = "test-bff-client";
-    
+
     protected override IHostBuilder CreateHostBuilder()
     {
         var hostBuilder = Host.CreateDefaultBuilder()
             .ConfigureWebHostDefaults(webBuilder =>
             {
                 webBuilder.UseEnvironment("Test");
-                
+
                 // Configure content root to avoid directory not found errors
                 var contentRoot = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
                 webBuilder.UseContentRoot(contentRoot!);
-                
+
                 webBuilder.ConfigureServices(services =>
                 {
                     // Start fresh with only the services we need for testing
@@ -44,13 +44,13 @@ public class BffWebApplicationFactory : WebApplicationFactory<amlink_submissions
                         options.Cookie.SameSite = SameSiteMode.Strict;
                         options.IdleTimeout = TimeSpan.FromHours(1);
                     });
-                    
+
                     // Add controllers from the BFF project
                     services.AddControllers()
                         .AddApplicationPart(typeof(amlink_submissions_mcp_bff.BffProgramMarker).Assembly);
-                    
+
                     services.AddRouting();
-                    
+
                     // Add authentication with both test handler and cookies for sign-in
                     services.AddAuthentication(defaultScheme: "Cookies")
                         .AddScheme<TestAuthenticationSchemeOptions, TestAuthenticationHandler>("Test", options => { })
@@ -62,7 +62,7 @@ public class BffWebApplicationFactory : WebApplicationFactory<amlink_submissions
                             options.Cookie.SameSite = SameSiteMode.Strict;
                             options.LoginPath = "/api/auth/login";
                             options.AccessDeniedPath = "/api/auth/login";
-                            
+
                             // Configure API challenge behavior
                             options.Events.OnRedirectToLogin = context =>
                             {
@@ -73,26 +73,26 @@ public class BffWebApplicationFactory : WebApplicationFactory<amlink_submissions
                                     context.Response.Headers.Append("WWW-Authenticate", "Bearer realm=\"BFF\"");
                                     return Task.CompletedTask;
                                 }
-                                
+
                                 // For non-API requests, use default redirect behavior
                                 context.Response.Redirect(context.RedirectUri);
                                 return Task.CompletedTask;
                             };
                         });
-                    
+
                     services.AddAuthorization();
-                    
+
                     // Add HTTP context accessor for controllers that need it
                     services.AddHttpContextAccessor();
                 });
-                
+
                 webBuilder.Configure(app =>
                 {
                     app.UseRouting();
                     app.UseSession();
                     app.UseAuthentication();
                     app.UseAuthorization();
-                    
+
                     app.UseEndpoints(endpoints =>
                     {
                         endpoints.MapControllers();
@@ -100,7 +100,7 @@ public class BffWebApplicationFactory : WebApplicationFactory<amlink_submissions
                     });
                 });
             });
-        
+
         return hostBuilder;
     }
 
@@ -108,7 +108,7 @@ public class BffWebApplicationFactory : WebApplicationFactory<amlink_submissions
     /// Gets the configured test Identity Server URL.
     /// </summary>
     public string TestIdentityServerUrl => TestIdentityServerUrlValue;
-    
+
     /// <summary>
     /// Gets the configured test client ID.
     /// </summary>
