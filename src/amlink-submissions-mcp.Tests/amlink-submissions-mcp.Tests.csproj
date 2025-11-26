@@ -41,6 +41,7 @@
   <ItemGroup>
     <ProjectReference Include="../amlink-submissions-mcp-server/amlink-submissions-mcp-server.csproj" />
     <ProjectReference Include="../amlink-submissions-mcp-client/amlink-submissions-mcp-client.csproj" />
+    <ProjectReference Include="../amlink-submissions-mcp-bff/amlink-submissions-mcp-bff.csproj" />
   </ItemGroup>
 
 </Project>
